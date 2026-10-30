@@ -266,12 +266,10 @@ td input.up{width:110px;text-align:right;padding:6px}
       <div class="toolbar noprint" style="margin-top:12px">
         <button class="btn" id="jpeg">PDF kaydet</button>
         <button class="btn ghost" id="save">Teklifi kaydet</button>
-        <button class="btn ghost" id="mail">E-posta metni</button>
         <button class="btn ghost" id="clear">Temizle</button>
       </div>
       <div class="msg" id="msg"></div>
       <div class="saved" id="saved"></div>
-      <div class="cust-card" id="mailBox" hidden style="margin-top:12px"><div class="cust-h">E-posta metni</div><textarea id="mailText" rows="8" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:#fff"></textarea><div style="margin-top:8px"><button class="btn" id="mailCopy">Kopyala</button></div><div class="saved" id="mailMsg"></div></div>
       <div class="cust-card" style="margin-top:12px"><div class="cust-h">Kayıtlı teklifler</div><div id="savedList"></div></div>
     </div>
     <div class="jpegbox" id="jpegBox" hidden>
@@ -770,18 +768,6 @@ fetch('rates.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).t
   persist(); renderList(); renderQuote();
 }).catch(() => {});
 renderSaved();
-$('mail').addEventListener('click', () => {
-  const cust = $('cust').value.trim() || 'Değerli müşterimiz';
-  const total = ((document.querySelector('.totals .grand') || {}).textContent || '').trim();
-  $('mailText').value = 'Sayın ' + cust + ',\n\n' + $('qno').value + ' numaralı teklifimiz aşağıdadır.\n\nGenel toplam: ' + total + ' (KDV dahil)\nGeçerlilik: ' + $('valid').value + ' gün\n\nSorularınız için bizimle iletişime geçebilirsiniz.\n\nSaygılarımızla,\nMikafon';
-  $('mailBox').hidden = false; $('mailText').focus();
-});
-$('mailCopy').addEventListener('click', async () => {
-  const ta = $('mailText');
-  try { await navigator.clipboard.writeText(ta.value); $('mailMsg').textContent = 'Kopyalandı.'; }
-  catch (e) { ta.select(); $('mailMsg').textContent = 'Metin seçildi, kopyalamak için Ctrl+C / Cmd+C kullanın.'; }
-  setTimeout(() => $('mailMsg').textContent = '', 3000);
-});
 let clearArmed = false;
 $('clear').addEventListener('click', () => {
   if (!clearArmed) { clearArmed = true; $('clear').textContent = 'Emin misiniz? Tekrar tıklayın'; setTimeout(() => { clearArmed = false; $('clear').textContent = 'Temizle'; }, 4000); return; }
