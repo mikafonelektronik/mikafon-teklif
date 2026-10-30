@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Mikafon Teklif Oluşturucu</title>
+<meta name="description" content="Mikafon ürün ve fiyat teklif oluşturucu">
+<meta property="og:title" content="Mikafon Teklif Oluşturucu">
+<meta property="og:description" content="Ürün ekle, fiyatları ve kurları kontrol et, PDF teklifi oluştur.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://mikafonelektronik.github.io/mikafon-teklif/og.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%230f2a4a%22/%3E%3Crect%20x%3D%2210%22%20y%3D%2248%22%20width%3D%2244%22%20height%3D%225%22%20rx%3D%222.5%22%20fill%3D%22%2319b4e6%22/%3E%3Cpath%20d%3D%22M14%2016h36v8H37v24h-10V24H14z%22%20fill%3D%22%23ffffff%22/%3E%3C/svg%3E">
 <style>
 @font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,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) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
@@ -131,6 +137,10 @@ td input.up{width:110px;text-align:right;padding:6px}
 @media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}.plist{max-height:none}}
 .tabs{display:none}
 .cust-card{background:#f7f5ef;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.saved-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.saved-info{min-width:0;font-size:14px}
+.saved-btns{display:flex;gap:6px}
+.saved-btns .btn{padding:6px 10px;font-size:13px}
 .cust-h{font-size:12px;font-weight:600;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px}
 .sheet{display:none!important}
 @media (max-width:900px){
@@ -251,11 +261,12 @@ td input.up{width:110px;text-align:right;padding:6px}
       <div class="noprint" id="fxnote" style="margin-top:10px;border:1.5px solid #b42318;background:#fdf3f2;border-radius:10px;padding:10px 12px;color:#7a1a12;font-size:13px;line-height:1.6" hidden></div>
       <div class="toolbar noprint" style="margin-top:12px">
         <button class="btn" id="jpeg">PDF kaydet</button>
-        <button class="btn ghost" id="save">Taslağı kaydet</button>
+        <button class="btn ghost" id="save">Teklifi kaydet</button>
         <button class="btn ghost" id="clear">Temizle</button>
       </div>
       <div class="msg" id="msg"></div>
       <div class="saved" id="saved"></div>
+      <div class="cust-card" style="margin-top:12px"><div class="cust-h">Kayıtlı teklifler</div><div id="savedList"></div></div>
     </div>
     <div class="jpegbox" id="jpegBox" hidden>
       <div class="jpeg-card">
@@ -657,7 +668,12 @@ async function buildJpeg() {
     ctx.textAlign = 'right'; ['Tel: +90 212 244 5177', 'info@mikafon.com.tr', 'www.mikafon.com.tr'].forEach((l, i) => ctx.fillText(l, W - P, fy + 46 + i * 28));
     ctx.fillStyle = '#e3dfd5'; ctx.fillRect(P, yb - 28, IW, 1);
     
-    ctx.fillStyle = '#5b6a80'; ctx.textAlign = 'right'; ctx.fillText('Sayfa ' + (p + 1) + ' / ' + pages, W - P, yb);
+    const ft = 'Sayfa ' + (p + 1) + ' / ' + pages; ctx.font = F(600, 15);
+    const bw = ctx.measureText(ft).width + 32, bh = 32, bx2 = W - P - bw, by2 = yb - bh + 6, r = 16;
+    ctx.beginPath(); ctx.moveTo(bx2 + r, by2); ctx.arcTo(bx2 + bw, by2, bx2 + bw, by2 + bh, r); ctx.arcTo(bx2 + bw, by2 + bh, bx2, by2 + bh, r); ctx.arcTo(bx2, by2 + bh, bx2, by2, r); ctx.arcTo(bx2, by2, bx2 + bw, by2, r); ctx.closePath();
+    ctx.fillStyle = '#f4f2ed'; ctx.fill(); ctx.strokeStyle = '#e3dfd5'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#5b6a80'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ft, bx2 + bw / 2, by2 + bh / 2 + 1);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
   const out = [];
   for (let p = 0; p < pages; p++) {
@@ -702,7 +718,43 @@ $('jpeg').addEventListener('click', async () => {
   } finally { btn.disabled = false; btn.textContent = old; }
 });
 $('jpegClose').addEventListener('click', () => { $('jpegBox').hidden = true; });
-$('save').addEventListener('click', () => { const ok = persist(); $('saved').textContent = ok ? 'Taslak bu tarayıcıda kaydedildi.' : 'Taslak kaydedilemedi: tarayıcı depolaması kapalı olabilir.'; setTimeout(() => $('saved').textContent = '', 3000); });
+$('save').addEventListener('click', () => { const ok = persist() && saveQuote(); renderSaved(); $('saved').textContent = ok ? 'Taslak bu tarayıcıda kaydedildi.' : 'Taslak kaydedilemedi: tarayıcı depolaması kapalı olabilir.'; setTimeout(() => $('saved').textContent = '', 3000); });
+const LIST_KEY = 'mikafon_teklifler_v1';
+function readList() { try { return JSON.parse(localStorage.getItem(LIST_KEY) || '[]'); } catch (e) { return []; } }
+function writeList(a) { try { localStorage.setItem(LIST_KEY, JSON.stringify(a)); return true; } catch (e) { return false; } }
+function saveQuote() {
+  const o = { lines: state.lines }; FIELDS.forEach(k => { o[k] = $(k).value; });
+  const list = readList(); const item = { qno: o.qno, cust: o.cust, savedAt: new Date().toISOString(), data: o };
+  const i = list.findIndex(x => x.qno === o.qno);
+  if (i >= 0) list[i] = item; else list.unshift(item);
+  return writeList(list);
+}
+function renderSaved() {
+  const box = $('savedList'); const list = readList();
+  if (!list.length) { box.innerHTML = '<div class="empty">Henüz kayıtlı teklif yok.</div>'; return; }
+  box.innerHTML = list.map((x, i) => '<div class="saved-row"><div class="saved-info"><b>' + esc(x.qno || '-') + '</b> · ' + esc(x.cust || 'Müşteri adı yok') + '<div class="mute">' + esc((x.data && x.data.qdate) || '') + '</div></div><div class="saved-btns"><button class="btn ghost" data-open="' + i + '">Aç</button><button class="btn ghost" data-del="' + i + '">Sil</button></div></div>').join('');
+}
+$('savedList').addEventListener('click', e => {
+  const o = e.target.closest('[data-open]'), d = e.target.closest('[data-del]');
+  if (o) {
+    const x = readList()[+o.dataset.open]; if (!x) return;
+    try { localStorage.setItem(KEY, JSON.stringify(x.data)); } catch (err) {}
+    restore(); renderList(); renderQuote();
+    $('saved').textContent = 'Teklif açıldı: ' + x.qno; setTimeout(() => $('saved').textContent = '', 3000);
+    return;
+  }
+  if (d) {
+    if (!d.dataset.armed) { d.dataset.armed = '1'; d.textContent = 'Emin misiniz?'; setTimeout(() => { delete d.dataset.armed; d.textContent = 'Sil'; }, 4000); return; }
+    const list = readList(); list.splice(+d.dataset.del, 1); writeList(list); renderSaved();
+  }
+});
+fetch('rates.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => {
+  if (!d) return;
+  if (typeof d.usd === 'number') $('rateUsd').value = d.usd;
+  if (typeof d.eur === 'number') $('rateEur').value = d.eur;
+  persist(); renderList(); renderQuote();
+}).catch(() => {});
+renderSaved();
 let clearArmed = false;
 $('clear').addEventListener('click', () => {
   if (!clearArmed) { clearArmed = true; $('clear').textContent = 'Emin misiniz? Tekrar tıklayın'; setTimeout(() => { clearArmed = false; $('clear').textContent = 'Temizle'; }, 4000); return; }
