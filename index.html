@@ -326,9 +326,33 @@ function renderList() {
   const q = $('q').value.trim().toLocaleLowerCase('tr-TR');
   const g = $('grp').value;
   const bd = $('brand').value;
-  const all = PRODUCTS.filter(p =>
-    (!g || p.gt === g) && (!bd || p.b === bd) &&
-    (!q || [p.m, p.s, p.c, p.b, p.gt, ...(p.sp || [])].join(' ').toLocaleLowerCase('tr-TR').includes(q)));
+  // Arama boşluk, tire, nokta gibi işaretleri yok sayar ("class5t" = "CLASS 5T") ve küçük yazım hatalarını tolere eder.
+  // Sıra: 0 ürün adında tam eşleşme, 1 diğer alanlarda tam eşleşme, 2-3 aynısı yazım hatalı, 9 eşleşme yok.
+  const nq = q.replace(/[^\p{L}\p{N}]+/gu, '');
+  const normS = t => String(t).toLocaleLowerCase('tr-TR').replace(/[^\p{L}\p{N}]+/gu, '');
+  const fuzzyDist = (qq, t) => { // en az kaç harf değişikliğiyle qq, t içinde bir parça olarak bulunur
+    let col = Array.from({ length: qq.length + 1 }, (_, i) => i), best = col[qq.length];
+    for (const ch of t) {
+      const nc = [0];
+      for (let i = 1; i <= qq.length; i++) nc[i] = Math.min(nc[i - 1] + 1, col[i] + 1, col[i - 1] + (qq[i - 1] === ch ? 0 : 1));
+      best = Math.min(best, nc[qq.length]); col = nc;
+    }
+    return best;
+  };
+  const allow = nq.length <= 4 ? 0 : nq.length <= 7 ? 1 : 2;
+  const tier = p => {
+    if (!q) return 0;
+    if (!nq) return [p.m, p.s, p.c, p.b, p.gt, ...(p.sp || [])].join(' ').toLocaleLowerCase('tr-TR').includes(q) ? 1 : 9;
+    const ti = normS([p.m, p.c, p.b].join(' ')), al = normS([p.m, p.s, p.c, p.b, p.gt, ...(p.sp || [])].join(' '));
+    if (ti.includes(nq)) return 0;
+    if (al.includes(nq)) return 1;
+    if (fuzzyDist(nq, ti) <= allow) return 2;
+    if (fuzzyDist(nq, al) <= allow) return 3;
+    return 9;
+  };
+  const all = PRODUCTS.map(p => ({ p, t: tier(p) }))
+    .filter(x => (!g || x.p.gt === g) && (!bd || x.p.b === bd) && x.t < 9)
+    .sort((a, b) => a.t - b.t).map(x => x.p);
   const items = all.slice(0, listLimit);
   $('cnt').textContent = all.length + ' ürün bulundu' + (all.length > listLimit ? ' · ilk ' + listLimit + ' gösteriliyor' : '');
   $('plist').innerHTML = items.map(p => {
