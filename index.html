@@ -674,11 +674,11 @@ async function buildJpeg() {
     ctx.textAlign = 'right'; ['Tel: +90 212 244 5177', 'info@mikafon.com.tr', 'www.mikafon.com.tr'].forEach((l, i) => ctx.fillText(l, W - P, fy + 46 + i * 28));
     ctx.fillStyle = '#e3dfd5'; ctx.fillRect(P, yb - 28, IW, 1);
     
-    const ft = 'Sayfa ' + (p + 1) + ' / ' + pages; ctx.font = F(700, 16);
+    const ft = 'Sayfa ' + (p + 1) + ' / ' + pages; ctx.font = F(600, 15);
     const bw = ctx.measureText(ft).width + 44, bh = 42, bx2 = W - P - bw, by2 = yb - 16, r = 21;
     ctx.beginPath(); ctx.moveTo(bx2 + r, by2); ctx.arcTo(bx2 + bw, by2, bx2 + bw, by2 + bh, r); ctx.arcTo(bx2 + bw, by2 + bh, bx2, by2 + bh, r); ctx.arcTo(bx2, by2 + bh, bx2, by2, r); ctx.arcTo(bx2, by2, bx2 + bw, by2, r); ctx.closePath();
-    ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = '#111111'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#111111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ft, bx2 + bw / 2, by2 + bh / 2 + 1);
+    ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = '#e3dfd5'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#5b6a80'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ft, bx2 + bw / 2, by2 + bh / 2 + 1);
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
   const out = [];
