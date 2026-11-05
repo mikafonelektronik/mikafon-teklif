@@ -233,6 +233,7 @@ td input.up{width:110px;text-align:right;padding:6px}
       <button type="button" id="mic" class="btn ghost sm" aria-label="Sesle ara veya ekle" title="Sesle ara. Sonuna 'ekle' deyince ilk ürünü teklife ekler" hidden>Sesle</button>
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
+      <button type="button" id="favTab" class="btn ghost sm" aria-pressed="false">★ Favoriler</button>
     </div>
     <details class="tools" id="tools">
       <summary>Toplu ekle, paketler</summary>
@@ -324,6 +325,7 @@ const PRODUCTS = [{"s": "15950370", "m": "ESCO/DOC 8", "b": "ENORMPA", "c": "EN5
 const KEY = 'mikafon-teklif-taslak';
 const AUTH = 'mikafon-staff-ok';
 const SYM = { USD: '$', EUR: '€', TRY: '₺' };
+var favOnly = false;
 const state = { lines: [] };
 
 const $ = id => document.getElementById(id);
@@ -380,7 +382,7 @@ function renderList() {
     return 9;
   };
   const all = PRODUCTS.map(p => ({ p, t: tier(p) }))
-    .filter(x => (!g || (g === '__fav' ? readFavList().includes(x.p.s) : x.p.gt === g)) && (!bd || x.p.b === bd) && x.t < 9)
+    .filter(x => (!g || x.p.gt === g) && (!favOnly || readFavList().includes(x.p.s)) && (!bd || x.p.b === bd) && x.t < 9)
     .sort((a, b) => a.t - b.t).map(x => x.p);
   const items = all.slice(0, listLimit);
   $('cnt').textContent = all.length + ' ürün bulundu' + (all.length > listLimit ? ' · ilk ' + listLimit + ' gösteriliyor' : '');
@@ -574,7 +576,7 @@ function unlock() { try { sessionStorage.setItem(AUTH, '1'); } catch (e) {} $('g
 
 (function init() {
   const groups = [...new Set(PRODUCTS.map(p => p.gt))];
-  $('grp').innerHTML = '<option value="">Tüm gruplar</option><option value="__fav">★ Favoriler</option>' + groups.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+  $('grp').innerHTML = '<option value="">Tüm gruplar</option>' + groups.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
   const brands = [...new Set(PRODUCTS.map(p => p.b).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
   $('brand').innerHTML = '<option value="">Tüm markalar</option>' + brands.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join('');
   restore();
@@ -1077,6 +1079,13 @@ $('shareBtn').addEventListener('click', async () => {
   } catch (e) {
     $('msg').textContent = 'Paylaşım hazırlanamadı: ' + (e && e.message ? e.message : 'bilinmeyen hata');
   } finally { btn.disabled = false; btn.textContent = old; }
+});
+$('favTab').addEventListener('click', () => {
+  favOnly = !favOnly;
+  const b = $('favTab');
+  b.setAttribute('aria-pressed', String(favOnly));
+  b.className = favOnly ? 'btn sm' : 'btn ghost sm';
+  resetList();
 });
 $('brandHome').addEventListener('click', e => { e.preventDefault(); location.reload(); });
 $('jpegClose').addEventListener('click', () => { $('jpegBox').hidden = true; });
