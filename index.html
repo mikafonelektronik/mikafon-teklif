@@ -226,6 +226,7 @@ td input.up{width:110px;text-align:right;padding:6px}
     <h2>Ürün ekle</h2>
     <div class="toolbar">
       <input type="search" id="q" enterkeyhint="search" autocomplete="off" placeholder="Model, stok kodu veya ürün adı ara">
+      <button type="button" id="mic" class="btn ghost sm" aria-label="Sesle ara veya ekle" title="Sesle ara. Sonuna 'ekle' deyince ilk ürünü teklife ekler" hidden>Sesle</button>
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
     </div>
@@ -565,6 +566,38 @@ $('grp').addEventListener('change', resetList);
 $('brand').addEventListener('change', resetList);
 function flashBtn(b) { b.textContent = 'Eklendi ✓'; b.style.background = '#1f8a4c'; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = 'Ekle'; b.style.background = ''; }, 1400); }
 $('plist').addEventListener('click', e => { if (e.target.closest('[data-more]')) { listLimit += 80; renderList(); return; } const b = e.target.closest('[data-add]'); if (b) { addLine(b.dataset.add); flashBtn(b); } });
+// Sesle arama ve ekleme (Chrome/Edge, mikrofon izni gerekir). Komut sonunda "ekle" varsa ilk sonuç teklife eklenir.
+(function () {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const mic = $('mic');
+  if (!SR || !mic) return;
+  mic.hidden = false;
+  mic.addEventListener('click', () => {
+    const rec = new SR();
+    rec.lang = 'tr-TR';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    mic.textContent = 'Dinleniyor…';
+    rec.onresult = e => {
+      mic.textContent = 'Sesle';
+      let t = (e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '').trim();
+      const add = /\s*ekle$/i.test(t);
+      t = t.replace(/\s*ekle$/i, '').trim();
+      $('q').value = t;
+      resetList();
+      if (!add) return;
+      const first = document.querySelector('#plist [data-add]');
+      if (!first) { $('cnt').textContent = '"' + t + '" için ürün bulunamadı'; return; }
+      const p = PRODUCTS.find(x => x.s === first.dataset.add);
+      addLine(first.dataset.add);
+      flashBtn(first);
+      $('cnt').textContent = (p ? p.m : 'Ürün') + ' teklife eklendi';
+    };
+    rec.onerror = () => { mic.textContent = 'Sesle'; $('cnt').textContent = 'Ses tanınamadı, tekrar deneyin'; };
+    rec.onend = () => { mic.textContent = 'Sesle'; };
+    try { rec.start(); } catch (err) { mic.textContent = 'Sesle'; }
+  });
+})();
 
 $('lines').addEventListener('change', e => {
   const t = e.target;
