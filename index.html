@@ -849,7 +849,7 @@ $('pkgDel').addEventListener('click', () => {
 renderPkgSel();
 if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 
-// Sesli asistan: ürün arama/ekleme, çıkarma, adet değiştirme, sıra numarasıyla işlem, "bir tane daha", toplam okuma, geri alma.
+// Sesli asistan v2: birden fazla komut ("RB6609 üç ve DA200 bir ekle"), bağlam ("onu", "ikisini de sil"), yazım hatasında onay, toplu silmede onay.
 (function () {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const mic = $('mic');
@@ -863,16 +863,22 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
   const SET = ['yap', 'yapın', 'olsun', 'ayarla', 'değiştir', 'değiştirin'];
   const INC = ['artır', 'arttır', 'çoğalt'];
   const DEC = ['azalt', 'eksilt', 'düşür'];
-  const FILL = new Set(['lütfen', 'bana', 'de', 'da', 'tane', 'adet', 'adedi', 'daha', 'ürünü', 'ürün', 'ürünleri', 'şunu', 'şu', 'onu', 'bunu', 've', 'ile', 'olarak', 'kadar', 'için', 'teklife', 'teklifte', 'tekliften', 'teklifimize', 'lazım', 'bir']);
-  const HELP = 'Örnekler: "RB6609 ekle", "üç tane RB6609 ekle", "ikinci ürünü sil", "son ürünü sil", "RB6609 beş yap", "ikinci ürün on olsun", "bir tane daha", "toplam ne", "geri al"';
+  const PRON = ['onu', 'onun', 'bunu', 'bunun', 'şunu', 'şunun'];
+  const BATCH = ['ikisini', 'ikisi', 'üçünü', 'üçü', 'hepsini', 'hepsi', 'bunları', 'bunların'];
+  const FILL = new Set(['lütfen', 'bana', 'de', 'da', 'tane', 'adet', 'adedi', 'daha', 'ürünü', 'ürün', 'ürünleri', 'şunu', 'şu', 'onu', 'bunu', 've', 'ile', 'olarak', 'kadar', 'için', 'teklife', 'teklifte', 'tekliften', 'teklifimize', 'lazım', 'bir', 'onun', 'bunun', 'şunun', 'ikisini', 'ikisi', 'üçünü', 'üçü', 'hepsini', 'hepsi', 'bunları', 'bunların']);
+  const YES = ['evet', 'tamam', 'olur', 'onay', 'onaylıyorum', 'doğru', 'peki'];
+  const NO = ['hayır', 'iptal', 'vazgeç', 'yok'];
+  const HELP = 'Örnekler: "RB6609 ekle", "üç tane RB6609 ekle", "RB6609 ve DA200 ekle", "ikinci ürünü sil", "onu beş yap", "ikisini de sil", "bir tane daha", "toplam ne", "geri al"';
   const LETTER = { be: 'b', bi: 'b', bee: 'b', te: 't', ti: 't', de: 'd', di: 'd', ef: 'f', ge: 'g', ce: 'c', ci: 'c', ke: 'k', ka: 'k', el: 'l', em: 'm', en: 'n', pe: 'p', pi: 'p', er: 'r', ar: 'r', es: 's', si: 's', ve: 'v', vi: 'v', ze: 'z', zi: 'z' };
   const history = [];
+  let pending = null;
+  let lastP = null;
+  let lastBatch = [];
   const toCode = text => text.toLocaleLowerCase('tr-TR').split(/\s+/).filter(Boolean).map(w => {
     if (/^\d+$/.test(w)) return w;
     if (UNITS[w] !== undefined) return String(UNITS[w]);
     return LETTER[w] !== undefined ? LETTER[w] : w;
   }).join(' ');
-  // Ardışık sayı sözcüklerini okur: "on iki" = 12, "iki yüz" = 200, "yirmi beş" = 25
   function numRun(toks, i) {
     let cur = 0, len = 0;
     for (let j = i; j < toks.length; j++) {
@@ -897,19 +903,19 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
     const found = raw.map(t => (ADD.includes(t) ? 'add' : DEL.includes(t) ? 'del' : SET.includes(t) ? 'set' : INC.includes(t) ? 'inc' : DEC.includes(t) ? 'dec' : null));
     const vIdx = found.map((v, i) => v ? i : -1).filter(i => i >= 0);
     if (verb === 'ara' && vIdx.length) verb = found[vIdx[vIdx.length - 1]];
-    // Sıra numarası: "ikinci ürün", "3 ürünü", "son ürün"
+    const pron = raw.some(t => PRON.includes(t));
+    const batch = raw.some(t => BATCH.includes(t));
     let pos = null;
     const keep = [];
     for (let i = 0; i < raw.length; i++) {
       const t = raw[i];
-      if (found[i] || t === 'geri' || t === 'yardım' || t === 'toplam' || t === 'temizle' || t === 'temizleyin') continue;
+      if (found[i] || t === 'geri' || t === 'yardım' || t === 'yardim' || t === 'toplam' || t === 'temizle' || t === 'temizleyin') continue;
       if (ORD[t] !== undefined && pos === null) { pos = ORD[t]; continue; }
       if (t === 'son' && pos === null) { pos = -1; continue; }
       if (/^\d{1,2}$/.test(t) && raw[i + 1] && raw[i + 1].startsWith('ürün') && pos === null) { pos = Number(t); continue; }
       keep.push(t);
     }
-    // Adet: sayı sözcüğü veya rakam (ürün kodunun parçası değilse)
-    const full = keep.filter(t => !FILL.has(t)).join(' ');
+    const fullAll = keep.filter(t => !FILL.has(t)).join(' ');
     let qty = null;
     for (let i = 0; i < keep.length; i++) {
       const r = numRun(keep, i);
@@ -917,10 +923,8 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
     }
     const rest = keep.filter(t => !FILL.has(t)).join(' ');
     if (verb === 'ara' && !vIdx.length && pos === null && raw.includes('daha')) { verb = 'inc'; qty = qty || 1; }
-    const fullAll = raw.filter(t => !found[raw.indexOf(t)] && t !== 'geri' && t !== 'yardım' && t !== 'toplam' && !FILL.has(t) && !ORD[t] && t !== 'son').join(' ');
-    return { verb, pos, qty, full, rest, fullAll };
+    return { verb, pos, qty, full: fullAll, rest, pron, batch };
   }
-  // Tam eşleşme arar; yanlış ürün eklememek için
   function exactFind(text) {
     if (!text) return null;
     const n = v => v.toLocaleLowerCase('tr-TR').replace(/[^\p{L}\p{N}]+/gu, '');
@@ -942,50 +946,95 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
   }
   function totalText() {
     const el = [...document.querySelectorAll('#quote *')].find(e => e.children.length === 0 && e.textContent.trim() === 'Genel toplam');
-    const v = el && el.parentElement && el.parentElement.lastElementChild ? el.parentElement.lastElementChild.textContent.trim() : '';
-    return v;
+    return el && el.parentElement && el.parentElement.lastElementChild ? el.parentElement.lastElementChild.textContent.trim() : '';
   }
-  function changeLine(l, fn, label) {
-    snapshot(); fn(); persist(); renderQuote(); renderList();
-    say(label, false);
+  const findLine = code => state.lines.find(l => l.s === code);
+  const nameOf = code => { const p = PRODUCTS.find(x => x.s === code); return p ? p.m : code; };
+  function commit() { persist(); renderQuote(); renderList(); }
+  function doAdd(p, qty) {
+    snapshot(); addQty(p.s, qty || 1); commit();
+    const b = document.querySelector('#plist [data-add="' + p.s + '"]'); if (b) flashBtn(b);
+    return p.m + ' teklife eklendi' + (qty > 1 ? ' (' + qty + ' adet)' : '');
   }
   function applyTo(p, cmd) {
-    const find = () => state.lines.find(x => x.s === p.s);
-    if (cmd.verb === 'add') {
-      snapshot(); addQty(p.s, cmd.qty || 1); persist(); renderQuote(); renderList();
-      const b = document.querySelector('#plist [data-add="' + p.s + '"]'); if (b) flashBtn(b);
-      return say(p.m + ' teklife eklendi' + (cmd.qty > 1 ? ' (' + cmd.qty + ' adet)' : ''), false);
-    }
+    const l = findLine(p.s);
+    if (cmd.verb === 'add') return doAdd(p, cmd.qty);
     if (cmd.verb === 'del') {
-      if (!find()) return say('Teklifte yok: ' + p.m, true);
-      changeLine(null, () => { state.lines = state.lines.filter(l => l.s !== p.s); }, p.m + ' tekliften silindi');
-      return;
+      if (!l) return 'Teklifte yok: ' + p.m;
+      snapshot(); state.lines = state.lines.filter(x => x.s !== p.s); commit();
+      return p.m + ' tekliften silindi';
     }
     if (cmd.verb === 'set') {
-      const l = find(); if (!l) return say('Teklifte yok: ' + p.m, true);
-      if (!cmd.qty) return say('Adedi söyleyin, örnek: ' + p.m + ' beş yap', true);
-      changeLine(l, () => { l.qty = Math.max(1, cmd.qty); }, p.m + ' adedi ' + l.qty + ' yapıldı');
-      return;
+      if (!l) return 'Teklifte yok: ' + p.m;
+      if (!cmd.qty) return 'Adedi söyleyin, örnek: ' + p.m + ' beş yap';
+      snapshot(); l.qty = Math.max(1, cmd.qty); commit();
+      return p.m + ' adedi ' + l.qty + ' yapıldı';
     }
     if (cmd.verb === 'inc' || cmd.verb === 'dec') {
-      const l = find();
       const step = cmd.qty || 1;
-      if (!l) { if (cmd.verb === 'inc') { snapshot(); addQty(p.s, step); persist(); renderQuote(); renderList(); return say(p.m + ' teklife eklendi', false); } return say('Teklifte yok: ' + p.m, true); }
-      changeLine(l, () => { l.qty = Math.max(1, l.qty + (cmd.verb === 'inc' ? step : -step)); }, p.m + ' adedi ' + l.qty + ' oldu');
-      return;
+      if (!l) return cmd.verb === 'inc' ? doAdd(p, step) : 'Teklifte yok: ' + p.m;
+      snapshot(); l.qty = Math.max(1, l.qty + (cmd.verb === 'inc' ? step : -step)); commit();
+      return p.m + ' adedi ' + l.qty + ' oldu';
     }
-    say(p.m + ' için sonuçlar listelendi', false);
+    return p.m + ' için sonuçlar listelendi';
   }
   function applyPos(cmd) {
     const idx = cmd.pos === -1 ? state.lines.length - 1 : cmd.pos - 1;
     const l = state.lines[idx];
-    if (!l) return say('Teklifte bu sırada ürün yok', true);
-    const name = l.m || l.s;
-    if (cmd.verb === 'del') return changeLine(l, () => { state.lines.splice(idx, 1); }, name + ' tekliften silindi');
-    if (cmd.verb === 'set' && cmd.qty) return changeLine(l, () => { l.qty = Math.max(1, cmd.qty); }, name + ' adedi ' + l.qty + ' yapıldı');
-    if (cmd.verb === 'inc') return changeLine(l, () => { l.qty += cmd.qty || 1; }, name + ' adedi ' + l.qty + ' oldu');
-    if (cmd.verb === 'dec') return changeLine(l, () => { l.qty = Math.max(1, l.qty - (cmd.qty || 1)); }, name + ' adedi ' + l.qty + ' oldu');
-    return say(name + ' · ' + (cmd.verb === 'set' ? 'adedi söyleyin' : 'işlem seçin'), true);
+    if (!l) return 'Teklifte bu sırada ürün yok';
+    lastP = l.s;
+    const name = nameOf(l.s);
+    if (cmd.verb === 'del') { snapshot(); state.lines.splice(idx, 1); commit(); return name + ' tekliften silindi'; }
+    if (cmd.verb === 'set' && cmd.qty) { snapshot(); l.qty = Math.max(1, cmd.qty); commit(); return name + ' adedi ' + l.qty + ' yapıldı'; }
+    if (cmd.verb === 'inc') { snapshot(); l.qty += cmd.qty || 1; commit(); return name + ' adedi ' + l.qty + ' oldu'; }
+    if (cmd.verb === 'dec') { snapshot(); l.qty = Math.max(1, l.qty - (cmd.qty || 1)); commit(); return name + ' adedi ' + l.qty + ' oldu'; }
+    return name + ' · işlem söyleyin (sil, beş yap, artır)';
+  }
+  function deleteCodes(codes) {
+    snapshot(); state.lines = state.lines.filter(l => !codes.includes(l.s)); commit();
+  }
+  // Tek bir komut parçasını işler; {msg, speak, codes} döndürür
+  function handleCmd(cmd, seg) {
+    if (cmd.verb === 'undo') {
+      if (!history.length) return { msg: 'Geri alınacak işlem yok', speak: true };
+      state.lines = history.pop(); commit();
+      return { msg: 'Son işlem geri alındı' };
+    }
+    if (cmd.verb === 'help') return { msg: HELP };
+    if (cmd.verb === 'total') { const t = totalText(); return { msg: t ? 'Genel toplam ' + t : 'Teklif boş', speak: true }; }
+    if (cmd.verb === 'clear') return { msg: 'Teklifi temizlemek için Temizle düğmesine basın' };
+    if (cmd.verb === 'inc' && !cmd.full && !cmd.rest && cmd.pos === null && !cmd.pron && !cmd.batch) cmd.pos = -1;
+    if (cmd.pos !== null) {
+      const msg = applyPos(cmd);
+      return { msg, speak: /yok|bu sırada/.test(msg), codes: lastP ? [lastP] : [] };
+    }
+    if (cmd.batch) {
+      if (cmd.verb !== 'del') return { msg: 'Toplu işlem şimdilik yalnızca silme için: "ikisini de sil"', speak: true };
+      const items = lastBatch.filter(c => findLine(c));
+      if (!items.length) return { msg: 'Son işlenen ürünler teklifte yok', speak: true };
+      if (items.length === 1) { deleteCodes(items); return { msg: nameOf(items[0]) + ' tekliften silindi' }; }
+      pending = { kind: 'batch', codes: items };
+      return { msg: items.length + ' ürün tekliften silinsin mi? "evet" ya da "hayır" deyin', speak: true };
+    }
+    let p = null, exact = false;
+    if (cmd.pron) {
+      p = lastP ? PRODUCTS.find(x => x.s === lastP) : null;
+      if (!p) return { msg: 'Önce bir ürün söyleyin', speak: true };
+      exact = true;
+    } else if (cmd.qty !== null && cmd.verb !== 'ara') {
+      p = exactFind(cmd.full);
+      if (p) { cmd.qty = null; exact = true; }
+      else { p = exactFind(cmd.rest); exact = !!p; }
+    } else {
+      p = exactFind(cmd.full) || exactFind(cmd.rest); exact = !!p;
+    }
+    if (!p) { p = findTop(cmd.full) || findTop(cmd.rest); exact = false; }
+    if (!p) return { msg: 'Duyulan: "' + seg + '" · ürün bulunamadı', speak: true };
+    if (cmd.verb === 'ara') return { msg: p.m + ' için sonuçlar listelendi' };
+    if (!exact) { pending = { kind: 'product', p, cmd }; return { msg: p.m + ' mi demek istediniz? "evet" ya da "hayır" deyin', speak: true }; }
+    lastP = p.s;
+    const msg = applyTo(p, cmd);
+    return { msg, speak: /yok|söyleyin|bulunamadı/.test(msg), codes: [p.s] };
   }
   mic.addEventListener('click', () => {
     const rec = new SR();
@@ -996,25 +1045,28 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
     rec.onresult = e => {
       mic.textContent = 'Sesle';
       const heard = (e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '').trim();
-      const cmd = parseVoice(heard);
-      if (cmd.verb === 'undo') {
-        if (!history.length) return say('Geri alınacak işlem yok', true);
-        state.lines = history.pop(); persist(); renderQuote(); renderList();
-        return say('Son işlem geri alındı', false);
+      const t = heard.toLocaleLowerCase('tr-TR').replace(/[.!?]+$/, '').trim();
+      const first = t.split(/\s+/)[0] || '';
+      // Bekleyen onay varsa önce onu yanıtla
+      if (pending) {
+        const pd = pending; pending = null;
+        if (YES.includes(first)) {
+          if (pd.kind === 'product') { lastP = pd.p.s; return say(applyTo(pd.p, pd.cmd), false); }
+          if (pd.kind === 'batch') { const names = pd.codes.map(nameOf).join(', '); deleteCodes(pd.codes); lastBatch = []; return say(names + ' tekliften silindi', false); }
+        }
+        if (NO.includes(first)) return say('İptal edildi', false);
       }
-      if (cmd.verb === 'help') return say(HELP, false);
-      if (cmd.verb === 'total') { const t = totalText(); return say(t ? 'Genel toplam ' + t : 'Teklif boş', true); }
-      if (cmd.verb === 'clear') return say('Teklifi temizlemek için Temizle düğmesine basın', false);
-      if (cmd.verb === 'inc' && !cmd.full && !cmd.rest && cmd.pos === null) cmd.pos = -1;
-      if (cmd.pos !== null) return applyPos(cmd);
-      let p = null;
-      if (cmd.qty !== null && cmd.verb !== 'ara') {
-        p = exactFind(cmd.fullAll);
-        if (p) cmd.qty = null; else p = exactFind(cmd.full) || exactFind(cmd.rest);
+      const segs = heard.split(/\s+(?:ve|sonra|ayrıca)\s+|[,;]\s*/i).map(s => s.trim()).filter(Boolean);
+      if (!segs.length) return say('Ses duyulmadı, tekrar deneyin', false);
+      const msgs = []; let speak = false; const touched = [];
+      for (const seg of segs) {
+        const r = handleCmd(parseVoice(seg), seg);
+        msgs.push(r.msg); speak = speak || !!r.speak;
+        if (r.codes) touched.push(...r.codes);
+        if (pending) break;
       }
-      else p = findTop(cmd.full) || findTop(cmd.rest);
-      if (!p) return say('Duyulan: "' + heard + '" · ürün bulunamadı', cmd.verb !== 'ara');
-      applyTo(p, cmd);
+      if (touched.length) lastBatch = [...new Set(touched)];
+      say(msgs.join(' · '), speak || !!pending);
     };
     rec.onerror = () => { mic.textContent = 'Sesle'; say('Ses tanınamadı, tekrar deneyin', false); };
     rec.onend = () => { mic.textContent = 'Sesle'; };
