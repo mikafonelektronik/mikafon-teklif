@@ -202,7 +202,7 @@ td input.up{width:110px;text-align:right;padding:6px}
   .top{position:static}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
-.tools{margin:0 0 8px}.tools summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}.tools-b{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}.tools-b textarea{width:100%;font:inherit;padding:8px;border:1px solid rgba(127,127,127,.4);border-radius:8px;background:transparent;color:inherit;box-sizing:border-box}.tools-b .field{flex:1 1 180px}.tools-h{width:100%;font-weight:600;margin-top:6px}
+.favbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}.favtabs{display:flex;flex-wrap:wrap;gap:6px}.tools{margin:0 0 8px}.tools summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}.tools-b{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}.tools-b textarea{width:100%;font:inherit;padding:8px;border:1px solid rgba(127,127,127,.4);border-radius:8px;background:transparent;color:inherit;box-sizing:border-box}.tools-b .field{flex:1 1 180px}.tools-h{width:100%;font-weight:600;margin-top:6px}
 </style>
 </head>
 <body>
@@ -233,7 +233,7 @@ td input.up{width:110px;text-align:right;padding:6px}
       <button type="button" id="mic" class="btn ghost sm" aria-label="Sesle ara veya ekle" title="Sesle ara. Sonuna 'ekle' deyince ilk ürünü teklife ekler" hidden>Sesle</button>
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
-      <span class="favtabs" id="favTabs"></span><button type="button" id="favNew" class="btn ghost sm">+ Favori listesi</button><button type="button" id="favDel" class="btn ghost sm">Listeyi sil</button>
+      <div class="favbar"><span class="favtabs" id="favTabs"></span><button type="button" id="favNew" class="btn ghost sm">+ Paket</button><label class="mute" for="favSel">Ürün ekle:</label><select id="favSel" aria-label="Ürünü eklenecek paket"></select><button type="button" id="favDel" class="btn ghost sm">Paketi sil</button></div>
     </div>
     <details class="tools" id="tools">
       <summary>Toplu ekle, paketler</summary>
@@ -629,7 +629,9 @@ function toggleFav(code) {
 function renderFavTabs() {
   const a = readFavLists();
   if (favActive >= a.length) favActive = Math.max(0, a.length - 1);
-  $('favTabs').innerHTML = a.map((l, i) => '<button type="button" class="btn sm' + (favOnly && i === favActive ? '' : ' ghost') + '" data-fav-tab="' + i + '" aria-pressed="' + (favOnly && i === favActive) + '">★ ' + esc(l.name) + ' <span>' + l.codes.length + '</span></button>').join('');
+  $('favTabs').innerHTML = a.map((l, i) => '<button type="button" class="btn sm" data-fav-tab="' + i + '">' + esc(l.name) + ' <span>(' + l.codes.length + ')</span></button>').join('');
+  $('favSel').innerHTML = a.map((l, i) => '<option value="' + i + '"' + (i === favActive ? ' selected' : '') + '>' + esc(l.name) + '</option>').join('');
+  $('favSel').hidden = !a.length;
   $('favDel').hidden = !a.length;
 }
 function readPkgs() { try { const a = JSON.parse(localStorage.getItem('mikafon-paketler') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
@@ -1104,14 +1106,16 @@ $('shareBtn').addEventListener('click', async () => {
 });
 $('favTabs').addEventListener('click', e => {
   const t = e.target.closest('[data-fav-tab]'); if (!t) return;
-  const i = Number(t.dataset.favTab);
-  favOnly = !(favOnly && favActive === i);
-  favActive = i;
-  renderFavTabs(); resetList();
+  const a = readFavLists(), l = a[Number(t.dataset.favTab)];
+  if (!l || !l.codes.length) { $('cnt').textContent = '"' + (l ? l.name : '') + '" paketinde ürün yok. Ürünlerin ☆ düğmesine basarak ekleyin'; return; }
+  let added = 0;
+  l.codes.forEach(code => { if (addQty(code, 1)) added++; });
+  $('cnt').textContent = '"' + l.name + '" paketinden ' + added + ' kalem teklife eklendi';
 });
+$('favSel').addEventListener('change', () => { favActive = Number($('favSel').value); renderFavTabs(); resetList(); });
 $('favNew').addEventListener('click', () => {
   const a = readFavLists();
-  a.push({ name: 'Favori ' + (a.length + 1), codes: [] });
+  a.push({ name: 'Paket-' + (a.length + 1), codes: [] });
   writeFavLists(a);
   favActive = a.length - 1; favOnly = false;
   renderFavTabs(); resetList();
@@ -1125,7 +1129,7 @@ $('favDel').addEventListener('click', () => {
   writeFavLists(a);
   favActive = 0; favOnly = false;
   renderFavTabs(); resetList();
-  $('cnt').textContent = '"' + name + '" listesi silindi';
+  $('cnt').textContent = '"' + name + '" paketi silindi';
 });
 renderFavTabs();
 $('brandHome').addEventListener('click', e => { e.preventDefault(); location.reload(); });
