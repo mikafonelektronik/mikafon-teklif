@@ -66,6 +66,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .stp{width:28px;flex:0 0 28px;border:0;background:#f4f2ed;color:var(--navy);font-size:18px;line-height:1;cursor:pointer;padding:0}
 .stepper input.qty{border:0;border-radius:0;height:auto;padding:0 2px;text-align:center;min-width:0;flex:1 1 auto;width:100%}
 .btn.del{background:#fff;color:var(--danger);border:1px solid #f2c4bf}
+.btn.del.armed{background:#2e9e5b;color:#fff;border:1px solid #2e9e5b}
 .btn.full{width:100%}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 .toolbar input{flex:1 1 180px}
@@ -569,7 +570,7 @@ function renderQuote() {
           value="${unit == null ? '' : unit.toFixed(2)}" placeholder="Fiyat yok" ${isNaN(r) ? 'disabled' : ''}></td>
       <td class="num"><div class="stepper"><button type="button" class="stp" data-step="-1" data-i="${i}" aria-label="Azalt">−</button><input class="qty" type="number" min="1" step="1" data-i="${i}" data-f="qty" value="${l.qty}"><button type="button" class="stp" data-step="1" data-i="${i}" aria-label="Artır">+</button></div></td>
       <td class="num"><span style="display:inline-block;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff;min-width:110px;text-align:right">${unit == null || incomplete ? '—' : fmt(unit * l.qty, cur)}</span></td>
-      <td class="num noprint"><button class="btn del sm" data-rm="${i}">Sil</button></td>
+      <td class="num noprint"><button class="btn del sm${armedRow === i ? ' armed' : ''}" data-rm="${i}" title="${armedRow === i ? 'Silmeyi onayla' : 'Sil'}">${armedRow === i ? '✓' : 'Sil'}</button></td>
     </tr>`;
   }).join('');
   $('empty').innerHTML = state.lines.length ? '' : '<div class="empty">Soldaki listeden ürün ekleyin.</div>';
@@ -744,7 +745,13 @@ $('plist').addEventListener('click', e => {
   if (e.target.closest('[data-more]')) { listLimit += 80; renderList(); return; }
   const fv = e.target.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); renderFavTabs(); renderList(); return; }
   const sg = e.target.closest('[data-sugg]'); if (sg) { $('q').value = sg.dataset.sugg; resetList(); return; }
-  const b = e.target.closest('[data-add]'); if (b) { addLine(b.dataset.add); flashBtn(b); }
+  const b = e.target.closest('[data-add]');
+  if (b) {
+    // Ürün teklifteyken (✓) tekrar basılırsa ürün tekliften çıkarılır: ilk basış ekler, ikinci basış çıkarır.
+    const idx = state.lines.findIndex(l => l.s === b.dataset.add);
+    if (idx >= 0) { state.lines.splice(idx, 1); persist(); renderQuote(); renderList(); return; }
+    addLine(b.dataset.add); flashBtn(b);
+  }
 });
 // Yardımcılar: favoriler, paketler, toplu ekleme (alt işlevler üst düzeyde, sesli komutlar da kullanır)
 // Favori listeleri: [{name, codes}], seçili liste favActive. Eski tek liste biçimi otomatik taşınır.
@@ -1094,12 +1101,17 @@ $('lines').addEventListener('change', e => {
   persist();
   renderQuote();
 });
+// Sil: ilk basış yeşil ✓ yapar, ✓'e basınca satır silinir. Başka yere tıklanınca ✓ eski haline döner.
+var armedRow = null;
 $('lines').addEventListener('click', e => {
   const st = e.target.closest('[data-step]');
-  if (st) { const l = state.lines[Number(st.dataset.i)]; if (!l) return; l.qty = Math.max(1, l.qty + Number(st.dataset.step)); persist(); renderQuote(); return; }
+  if (st) { armedRow = null; const l = state.lines[Number(st.dataset.i)]; if (!l) return; l.qty = Math.max(1, l.qty + Number(st.dataset.step)); persist(); renderQuote(); return; }
   const b = e.target.closest('[data-rm]');
-  if (!b) return;
-  state.lines.splice(Number(b.dataset.rm), 1);
+  if (!b) { if (armedRow !== null) { armedRow = null; renderQuote(); } return; }
+  const idx = Number(b.dataset.rm);
+  if (armedRow !== idx) { armedRow = idx; renderQuote(); return; }
+  armedRow = null;
+  state.lines.splice(idx, 1);
   persist();
   renderQuote();
 });
