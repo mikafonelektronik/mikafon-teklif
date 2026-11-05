@@ -263,7 +263,7 @@ td input.up{width:110px;text-align:right;padding:6px}
 
   <section class="card" id="quote" aria-label="Teklif">
     <div class="editable">
-      <div class="field" style="margin-bottom:12px"><label for="proj">Proje adı</label><input type="text" id="proj" placeholder="örn. Ankara Hastane Projesi"></div>
+      <div class="field" style="margin-bottom:12px"><label for="proj">Proje Adı:</label><input type="text" id="proj" placeholder="örn. Ankara Hastane Projesi"></div>
       <div class="cust-card">
         <div class="cust-h">Müşteri bilgileri</div>
         <div class="grid2">
@@ -514,7 +514,7 @@ function renderQuote() {
       </div>
       <div class="pv-rule"></div>
       <div class="pv-meta">
-        ${$('proj').value.trim() ? `<div><strong>Proje:</strong> ${esc($('proj').value.trim())}</div>` : ''}
+        ${$('proj').value.trim() ? `<div><strong>Proje Adı:</strong>${esc($('proj').value.trim())}</div>` : ''}
         <div><strong>Sayın:</strong> ${esc($('cust').value) || '—'}${$('contact').value ? ' · ' + esc($('contact').value) : ''}</div>
         <div><strong>Teklif no:</strong> ${esc($('qno').value)} · <strong>Geçerlilik:</strong> ${esc($('valid').value)} gün · <strong>Hazırlayan:</strong> ${esc($('seller').value)}</div>
       </div>
