@@ -514,7 +514,7 @@ function renderQuote() {
       </div>
       <div class="pv-rule"></div>
       <div class="pv-meta">
-        ${$('proj').value.trim() ? `<div><strong>Proje Adı:</strong>${esc($('proj').value.trim())}</div>` : ''}
+        ${$('proj').value.trim() ? `<div><strong>Proje Adı:</strong> ${esc($('proj').value.trim())}</div>` : ''}
         <div><strong>Sayın:</strong> ${esc($('cust').value) || '—'}${$('contact').value ? ' · ' + esc($('contact').value) : ''}</div>
         <div><strong>Teklif no:</strong> ${esc($('qno').value)} · <strong>Geçerlilik:</strong> ${esc($('valid').value)} gün · <strong>Hazırlayan:</strong> ${esc($('seller').value)}</div>
       </div>
