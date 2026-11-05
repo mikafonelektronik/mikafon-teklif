@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-03SXLPQGVR"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-03SXLPQGVR');</script>
 <title>Mikafon Teklif Oluşturucu</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1b2a3a">
@@ -581,7 +583,7 @@ function checkQnoDup() {
   const dup = q && readList().some(x => x.qno === q && (!x.data || x.data.cust !== $('cust').value));
   if (dup) $('msg').textContent = 'Bu teklif no ("' + q + '") başka bir müşteri için kayıtlı. Yeni bir numara seçin.';
 }
-function unlock() { try { localStorage.setItem(AUTH, String(Date.now())); } catch (e) {} $('gate').style.display = 'none'; }
+function unlock() { try { localStorage.setItem(AUTH, String(Date.now())); } catch (e) {} try { gtag('event', 'giris'); } catch (e) {} $('gate').style.display = 'none'; }
 function isUnlocked() { try { const t = Number(localStorage.getItem(AUTH) || 0); return t > 0 && Date.now() - t < AUTH_DAYS * 86400000; } catch (e) { return false; } }
 
 (function init() {
