@@ -687,18 +687,31 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
     const n = toNum(w); if (n !== null) return String(n);
     return LETTER[w] !== undefined ? LETTER[w] : w;
   }).join(' ');
+  // Komutu ayrıştırır: fiil (ekle/sil/yap), ürün metni ve varsa adet. Sayı adı ya da kısa rakam adet olabilir;
+  // bu durumda önce tam metnin ürün olup olmadığına bakılır (ör. "RB 6609" bir adet değil, ürün koddur).
   function parseVoice(heard) {
-    let t = heard.trim().toLocaleLowerCase('tr-TR').replace(/[.,!?]+$/, '');
-    let verb = 'ara', num = null;
-    const m = t.match(/^(.*)\s+(ekle|sil|yap)$/);
-    if (m) { verb = m[2]; t = m[1].trim(); }
-    let parts = t.split(/\s+/).filter(Boolean);
-    if (verb === 'yap' && parts.length > 1 && toNum(parts[parts.length - 1]) !== null) { num = toNum(parts.pop()); }
-    if (verb === 'ekle') {
-      if (parts.length > 1 && toNum(parts[0]) !== null) { num = toNum(parts.shift()); if (parts[0] === 'tane') parts.shift(); }
-      else if (parts.length > 1 && toNum(parts[parts.length - 1]) !== null) { num = toNum(parts.pop()); }
-    }
-    return { verb, num, text: parts.join(' ') };
+    let toks = heard.trim().toLocaleLowerCase('tr-TR').split(/\s+/)
+      .map(t => t.replace(/[’'].*$/, '').replace(/[.,!?;:]+$/, '')).filter(Boolean);
+    let verb = 'ara';
+    const vi = toks.map((t, i) => (t === 'ekle' || t === 'sil' || t === 'yap') ? i : -1).filter(i => i >= 0);
+    if (vi.length) verb = toks[vi[vi.length - 1]];
+    toks = toks.filter(t => t !== 'ekle' && t !== 'sil' && t !== 'yap' && t !== 'tane' && t !== 'adet');
+    const full = toks.join(' ');
+    let qty = null;
+    const wi = toks.findIndex(t => NUMW[t] !== undefined);
+    if (wi >= 0) qty = { num: NUMW[toks[wi]], rest: toks.filter((_, i) => i !== wi).join(' ') };
+    else if (toks.length > 1 && /^\d{1,2}$/.test(toks[0]) && !/^\d/.test(toks[1])) qty = { num: Number(toks[0]), rest: toks.slice(1).join(' ') };
+    else if (toks.length > 1 && /^\d{1,2}$/.test(toks[toks.length - 1]) && !/^\d/.test(toks[toks.length - 2])) qty = { num: Number(toks[toks.length - 1]), rest: toks.slice(0, -1).join(' ') };
+    return { verb, full, qty, num: null };
+  }
+  // Tam eşleşme arar (yazım toleranslı değil); yanlış ürün eklememek için
+  function exactFind(text) {
+    if (!text) return null;
+    const n = v => v.toLocaleLowerCase('tr-TR').replace(/[^\p{L}\p{N}]+/gu, '');
+    const p = findTop(text) || findTop(toCode(text));
+    if (!p) return null;
+    const keys = [n(text), n(toCode(text))];
+    return keys.includes(n(p.m)) || keys.includes(n(p.s)) ? p : null;
   }
   // Arama kutusuna yazıp ilk sonucu döndürür; önce söylenen metin, olmazsa harf/sayılara çevrilmiş hali denenir
   function findTop(text) {
@@ -716,7 +729,9 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
       mic.textContent = 'Sesle';
       const heard = (e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '').trim();
       const cmd = parseVoice(heard);
-      const p = findTop(cmd.text);
+      let p = null;
+      if (cmd.qty) { p = exactFind(cmd.full); if (!p) { p = findTop(cmd.qty.rest); cmd.num = cmd.qty.num; } }
+      else { p = findTop(cmd.full); }
       if (!p) { $('cnt').textContent = 'Duyulan: "' + heard + '" · ürün bulunamadı'; return; }
       if (cmd.verb === 'ara') { $('cnt').textContent = p.m + ' için sonuçlar'; return; }
       if (cmd.verb === 'ekle') {
