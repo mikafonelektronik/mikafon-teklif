@@ -101,6 +101,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .prod .prow button:hover{box-shadow:0 3px 10px rgba(10,26,47,.14);border-color:var(--blue)}
 .prod:hover .prow .btn.ghost.sm{border-color:var(--blue);box-shadow:0 3px 10px rgba(10,26,47,.14)}
 .prod:hover .addi{border-color:var(--blue);box-shadow:0 3px 10px rgba(10,26,47,.14)}
+@media (max-width:600px){.prod{grid-template-columns:56px minmax(0,1fr);row-gap:10px}.prod .side{grid-column:1/-1;width:100%;justify-content:space-between}.prod .pr{width:auto;flex:1 1 auto;min-width:0}.prod .prow{flex:none}}
 .prod .prow .btn.ghost.sm.fav-on{background:#f5c518;border-color:#e0a800;color:#fff}
 .prod .prow .btn.ghost.sm.fav-on:hover{border-color:#e0a800;box-shadow:0 3px 10px rgba(224,168,0,.35)}
 .addi:hover{background:var(--blue);color:#fff}
