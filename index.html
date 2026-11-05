@@ -1256,7 +1256,7 @@ $('savedList').addEventListener('click', e => {
   const c = e.target.closest('[data-copy]');
   if (c) {
     const x = readList()[+c.dataset.copy]; if (!x) return;
-    const data = Object.assign({}, x.data, { qno: newQuoteNo(), qdate: todayISO(), cust: '', contact: '' });
+    const data = Object.assign({}, x.data, { qno: newQuoteNo(), qdate: todayISO(), cust: '', contact: '', proj: '' });
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (err) {}
     restore(); renderList(); renderQuote(); persist();
     $('saved').textContent = 'Kopya açıldı, yeni teklif no: ' + data.qno + ' · müşteri bilgilerini yeni müşteri için girin'; setTimeout(() => $('saved').textContent = '', 3000);
@@ -1286,7 +1286,7 @@ $('clear').addEventListener('click', () => {
   if (!clearArmed) { clearArmed = true; $('clear').textContent = 'Emin misiniz? Tekrar tıklayın'; setTimeout(() => { clearArmed = false; $('clear').textContent = 'Temizle'; }, 4000); return; }
   clearArmed = false; $('clear').textContent = 'Temizle';
   state.lines = [];
-  ['cust','contact'].forEach(k => $(k).value = '');
+  ['cust','contact','proj'].forEach(k => $(k).value = '');
   $('disc').value = '0'; $('vat').value = '20'; $('valid').value = '15';
   $('qno').value = newQuoteNo(); $('qdate').value = todayISO();
   persist(); renderList(); renderQuote();
