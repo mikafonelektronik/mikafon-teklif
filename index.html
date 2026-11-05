@@ -70,6 +70,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .toolbar input,.toolbar select{height:42px;padding:0 12px;font-size:14px}
 .toolbar input{-webkit-appearance:none;appearance:none;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 16px}
 .toolbar select{border-radius:12px;padding:0 16px}
+.toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center}
+#q{grid-column:1}#mic{grid-column:2}#grp{grid-column:3}#brand{grid-column:1}
+.favbar{grid-column:2 / 4;margin:0;display:flex;flex-wrap:nowrap;align-items:center;gap:8px;min-width:0}
+.toolbar input,.toolbar select,.toolbar .btn,.favbar select,.favbar .btn{height:40px;box-sizing:border-box;border-radius:12px;margin:0}
+.toolbar .btn{padding:0 14px;white-space:nowrap}
+.favbar select{flex:0 1 180px;min-width:0}
+.favbar label{white-space:nowrap}
+.favbar>.favtabs:empty{display:none}
+@media (max-width:900px){.toolbar{grid-template-columns:minmax(0,1fr)}.toolbar>*{grid-column:1/-1!important}.favbar{flex-wrap:wrap}}
 .toolbar input::placeholder{color:var(--mute)}
 .col-list{height:0;min-height:100%;display:flex;flex-direction:column}
 .plist{display:flex;flex-direction:column;gap:8px;flex:1 1 0;min-height:0;overflow:auto;padding-right:4px}
@@ -317,7 +326,7 @@ details.tools[open]>summary .sum-chev{transform:rotate(180deg)}
       <button type="button" id="mic" class="btn ghost sm" aria-label="Sesle ara veya ekle" title="Sesle ara. Sonuna 'ekle' deyince ilk ürünü teklife ekler" hidden>Sesle</button>
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
-      <div class="favbar"><span class="favtabs" id="favTabs"></span><button type="button" id="favNew" class="btn ghost sm">+ Paket</button><label class="mute" for="favSel">Ürün ekle:</label><select id="favSel" aria-label="Ürünü eklenecek paket"></select><button type="button" id="favDel" class="btn ghost sm">Paketi sil</button></div>
+      <div class="favbar"><span class="favtabs" id="favTabs"></span><button type="button" id="favNew" class="btn ghost sm">+ Paket</button><select id="favSel" aria-label="Ürünü eklenecek paket"></select><button type="button" id="favDel" class="btn ghost sm">Paketi sil</button></div>
     </div>
     <details class="tools" id="tools">
       <summary><span class="sum-t">Toplu ekle</span><span class="sum-sep">·</span><span class="sum-t">Paketler</span><span class="sum-chev" aria-hidden="true">▾</span></summary>
