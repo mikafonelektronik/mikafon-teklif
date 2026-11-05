@@ -343,9 +343,12 @@ function renderList() {
   const tier = p => {
     if (!q) return 0;
     if (!nq) return [p.m, p.s, p.c, p.b, p.gt, ...(p.sp || [])].join(' ').toLocaleLowerCase('tr-TR').includes(q) ? 1 : 9;
-    const ti = normS([p.m, p.c, p.b].join(' ')), al = normS([p.m, p.s, p.c, p.b, p.gt, ...(p.sp || [])].join(' '));
-    if (ti.includes(nq)) return 0;
-    if (al.includes(nq)) return 1;
+    // Alanlar ayrı ayrı kontrol edilir; birleşik metinde alan sınırları arasında sahte eşleşme olmasın diye.
+    const tf = [p.m, p.c, p.b].map(normS), af = [p.m, p.s, p.c, p.b, p.gt, ...(p.sp || [])].map(normS);
+    const ti = tf.join(''), al = af.join('');
+    if (normS(p.m).startsWith(nq)) return -1; // model adı aranan ile başlayanlar en üstte
+    if (tf.some(x => x.includes(nq))) return 0;
+    if (af.some(x => x.includes(nq))) return 1;
     if (fuzzyDist(nq, ti) <= allow) return 2;
     if (fuzzyDist(nq, al) <= allow) return 3;
     return 9;
