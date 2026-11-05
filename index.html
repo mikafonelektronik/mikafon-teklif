@@ -219,7 +219,7 @@ td input.up{width:110px;text-align:right;padding:6px}
 
 <header class="top noprint">
   <div class="brand">
-    <img src="img/logo_white_hd.png" alt="Mikafon">
+    <a href="./" id="brandHome" title="Sayfayı yenile" style="display:contents"><img src="img/logo_white_hd.png" alt="Mikafon"></a>
     <div><div class="title">Teklif Oluşturucu</div><div class="sub">Şirket içi kullanım</div></div>
   </div>
   <nav class="tabs" id="tabs"><button data-v="list" class="on">Ürünler</button><button data-v="quote">Teklif</button></nav>
@@ -1078,6 +1078,7 @@ $('shareBtn').addEventListener('click', async () => {
     $('msg').textContent = 'Paylaşım hazırlanamadı: ' + (e && e.message ? e.message : 'bilinmeyen hata');
   } finally { btn.disabled = false; btn.textContent = old; }
 });
+$('brandHome').addEventListener('click', e => { e.preventDefault(); location.reload(); });
 $('jpegClose').addEventListener('click', () => { $('jpegBox').hidden = true; });
 $('save').addEventListener('click', () => { const ok = persist() && saveQuote(); renderSaved(); $('saved').textContent = ok ? 'Taslak bu tarayıcıda kaydedildi.' : 'Taslak kaydedilemedi: tarayıcı depolaması kapalı olabilir.'; setTimeout(() => $('saved').textContent = '', 3000); });
 const LIST_KEY = 'mikafon_teklifler_v1';
