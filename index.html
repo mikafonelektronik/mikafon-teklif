@@ -572,6 +572,16 @@ $('plist').addEventListener('click', e => { if (e.target.closest('[data-more]'))
   const mic = $('mic');
   if (!SR || !mic) return;
   mic.hidden = false;
+  // Türkçe konuşmada harf ve sayı adları: "be"→b, "te"→t, "beş"→5 gibi.
+  const LETTER = {be:'b',bi:'b',bee:'b',te:'t',ti:'t',de:'d',di:'d',ef:'f',ge:'g',ce:'c',ci:'c',ke:'k',ka:'k',el:'l',em:'m',en:'n',pe:'p',pi:'p',er:'r',ar:'r',es:'s',si:'s',ve:'v',vi:'v',ze:'z',zi:'z',he:'h',hi:'h',ye:'y',yi:'y',kü:'',x:'x'};
+  const NUM = {bir:'1',iki:'2',üç:'3',uç:'3',dört:'4',beş:'5',altı:'6',yedi:'7',sekiz:'8',dokuz:'9',sıfır:'0',on:'10',yüz:'100'};
+  function spokenToCode(text) {
+    return text.toLocaleLowerCase('tr-TR').split(/\s+/).filter(Boolean).map(w => {
+      if (NUM[w] !== undefined) return NUM[w];
+      if (LETTER[w] !== undefined) return LETTER[w];
+      return w;
+    }).join(' ');
+  }
   mic.addEventListener('click', () => {
     const rec = new SR();
     rec.lang = 'tr-TR';
@@ -580,14 +590,20 @@ $('plist').addEventListener('click', e => { if (e.target.closest('[data-more]'))
     mic.textContent = 'Dinleniyor…';
     rec.onresult = e => {
       mic.textContent = 'Sesle';
-      let t = (e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '').trim();
-      const add = /\s*ekle$/i.test(t);
-      t = t.replace(/\s*ekle$/i, '').trim();
+      const heard = (e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '').trim();
+      const add = /\s*ekle$/i.test(heard);
+      let t = heard.replace(/\s*ekle$/i, '').trim();
+      const count = () => document.querySelectorAll('#plist [data-add]').length;
       $('q').value = t;
       resetList();
+      if (!count()) {
+        // Konuşma tanıma harf ve sayıları kelime olarak verir ("ar bi altı bin..."); bunları çevirip tekrar dene.
+        const conv = spokenToCode(t);
+        if (conv && conv !== t) { $('q').value = conv; resetList(); }
+      }
+      if (!count()) { $('cnt').textContent = 'Duyulan: "' + heard + '" · ürün bulunamadı'; return; }
       if (!add) return;
       const first = document.querySelector('#plist [data-add]');
-      if (!first) { $('cnt').textContent = '"' + t + '" için ürün bulunamadı'; return; }
       const p = PRODUCTS.find(x => x.s === first.dataset.add);
       addLine(first.dataset.add);
       flashBtn(first);
