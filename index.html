@@ -558,16 +558,21 @@ function persist() {
     const o = { lines: state.lines };
     FIELDS.forEach(k => { o[k] = $(k).value; });
     localStorage.setItem(KEY, JSON.stringify(o));
+    try { localStorage.setItem(SELLER_KEY, $('seller').value); } catch (e) {}
     return true;
   } catch (e) { return false; }
 }
 // Yenilenen SH serisinin eski TORQUE stok kodları -> yeni ZENITH AUDIO N kodları
 const OLD_CODES = { '14150140': '14150141', '14150180': '14150181', '14150220': '14150221', '14150300': '14150301' };
+// Hazırlayan adı her zaman sabit kalır: kayıtlı teklif ya da kopya açılsa bile bu tarayıcıda son yazılan ad korunur
+const SELLER_KEY = 'mikafon-hazirlayan';
+function applySeller() { try { const s = localStorage.getItem(SELLER_KEY); if (s) $('seller').value = s; } catch (e) {} }
 function restore() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (!d) return;
+    if (!d) { applySeller(); return; }
     FIELDS.forEach(k => { if (d[k] != null) $(k).value = d[k]; });
+    applySeller();
     state.lines = Array.isArray(d.lines) ? d.lines.map(l => {
       const amt = typeof l.amt === 'number' ? l.amt : (typeof l.usd === 'number' ? l.usd : null);
       let s = String(l.s), m = l.m || '', c = l.c || '', img = l.img || '', cu = l.cu === 'EUR' ? 'EUR' : 'USD', a = amt;
