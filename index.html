@@ -268,6 +268,24 @@ td input.up{width:110px;text-align:right;padding:6px}
   .top{position:static}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+.bulk-help{width:100%;display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
+.bulk-help label{font-size:13px;font-weight:600;color:var(--navy)}
+.bulk-ex{font-size:12px;color:var(--mute)}
+.bulk-area{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:13px;background:#fff;color:var(--ink,#0a1a2f);resize:vertical;min-height:96px;line-height:1.5}
+.bulk-area:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,95,174,.12)}
+.bulk-go{width:100%;height:40px;border-radius:12px;margin-top:8px}
+details.tools>summary{display:flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;padding:8px 12px;border:1px solid var(--blue);border-radius:12px;background:#eef4fb;color:var(--navy);font-weight:700;cursor:pointer;list-style:none}
+details.tools>summary::-webkit-details-marker{display:none}
+details.tools[open]>summary{margin-bottom:8px}
+.tools-b button.btn,.tools-b select,.tools-b input[type=text]{height:40px;box-sizing:border-box;border-radius:12px}
+.tools-b .field{margin:0;align-self:center}
+.tools-b .field input{height:40px;box-sizing:border-box}
+.tools-b #pkgSave,.tools-b #pkgSel{align-self:center;margin:0}
+details.tools>summary{user-select:none;-webkit-user-select:none;justify-content:flex-start}
+.sum-t{font-weight:700}
+.sum-sep{color:var(--mute);font-weight:400}
+.sum-chev{margin-left:auto;color:var(--blue);font-size:12px;transition:transform .15s}
+details.tools[open]>summary .sum-chev{transform:rotate(180deg)}
 .custhist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.favbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}.favtabs{display:flex;flex-wrap:wrap;gap:6px}.tools{margin:0 0 8px}.tools summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}.tools-b{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}.tools-b textarea{width:100%;font:inherit;padding:8px;border:1px solid rgba(127,127,127,.4);border-radius:8px;background:transparent;color:inherit;box-sizing:border-box}.tools-b .field{flex:1 1 180px}.tools-h{width:100%;font-weight:600;margin-top:6px}
 </style>
 </head>
@@ -302,11 +320,11 @@ td input.up{width:110px;text-align:right;padding:6px}
       <div class="favbar"><span class="favtabs" id="favTabs"></span><button type="button" id="favNew" class="btn ghost sm">+ Paket</button><label class="mute" for="favSel">Ürün ekle:</label><select id="favSel" aria-label="Ürünü eklenecek paket"></select><button type="button" id="favDel" class="btn ghost sm">Paketi sil</button></div>
     </div>
     <details class="tools" id="tools">
-      <summary>Toplu ekle, paketler</summary>
+      <summary><span class="sum-t">Toplu ekle</span><span class="sum-sep">·</span><span class="sum-t">Paketler</span><span class="sum-chev" aria-hidden="true">▾</span></summary>
       <div class="tools-b">
-        <label class="mute" for="bulk" style="width:100%">Her satıra stok kodu ya da model ve adet yazın (örnek: RB6609 3). Excel'den iki sütunu kopyalayıp yapıştırabilirsiniz.</label>
-        <textarea id="bulk" rows="4" placeholder="RB6609 3&#10;RBFAN2 1"></textarea>
-        <button type="button" class="btn sm" id="bulkAdd">Teklife ekle</button>
+        <div class="bulk-help"><label for="bulk">Her satıra stok kodu veya model ile adedi yazın.</label><span class="bulk-ex">Örnek: LIVE 14 3</span><span class="bulk-ex">Excel'den iki sütunu kopyalayıp yapıştırabilirsiniz.</span></div>
+        <textarea id="bulk" class="bulk-area" rows="4" placeholder="LIVE 14 3&#10;DA200 1"></textarea>
+        <button type="button" class="btn sm bulk-go" id="bulkAdd">Teklife ekle</button>
         <div class="tools-h">Paketler</div>
         <div class="field"><input type="text" id="pkgName" placeholder="Paket adı"></div>
         <button type="button" class="btn ghost sm" id="pkgSave">Teklifi paket olarak kaydet</button>
