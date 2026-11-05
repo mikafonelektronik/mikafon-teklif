@@ -76,17 +76,19 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .prod .nm{font-weight:600;font-size:13px}
 .prod .meta{font-size:12px;color:var(--mute)}
 .prod .side{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.prod .pr{font-weight:600;color:var(--navy);font-size:15px;white-space:nowrap;height:40px;display:flex;align-items:center;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
-.prod .prow{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.prod .side{flex-direction:row;align-items:center;width:auto;gap:6px}
+.prod .pr{font-weight:600;color:var(--navy);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none;width:124px;height:40px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 10px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.prod .prow{display:flex;gap:6px;align-items:center;justify-content:flex-end;width:auto}
 .prod .prow button{transition:background .15s,border-color .15s,box-shadow .15s}
 .prod .prow button:hover{box-shadow:0 3px 10px rgba(10,26,47,.14);border-color:var(--blue)}
-.prod:hover .pr{border-color:var(--blue);box-shadow:0 3px 10px rgba(10,26,47,.14)}
 .prod:hover .prow .btn.ghost.sm{border-color:var(--blue);box-shadow:0 3px 10px rgba(10,26,47,.14)}
 .prod:hover .addi{border-color:var(--blue);box-shadow:0 3px 10px rgba(10,26,47,.14)}
+.prod .prow .btn.ghost.sm.fav-on{background:#f5c518;border-color:#e0a800;color:#fff}
+.prod .prow .btn.ghost.sm.fav-on:hover{border-color:#e0a800;box-shadow:0 3px 10px rgba(224,168,0,.35)}
 .addi:hover{background:var(--blue);color:#fff}
 .addi.on:hover{background:#2e9e5b;color:#fff;border-color:#2e9e5b}
 .prod .prow .btn.ghost.sm{width:40px;height:40px;border-radius:12px;padding:0;display:flex;align-items:center;justify-content:center;font-size:17px}
-.addi{width:40px;height:40px;border-radius:12px;border:1px solid var(--blue);background:#fff;color:var(--blue);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.addi{width:40px;height:40px;border-radius:12px;border-radius:12px;border:1px solid var(--blue);background:#fff;color:var(--blue);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
 .addi.on{background:#2e9e5b;border-color:#2e9e5b;color:#fff}
 .addi:active{transform:scale(.96)}
 .addi:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
@@ -421,7 +423,7 @@ function renderList() {
         <div class="meta">S.N: ${esc(p.s)} · ${esc(p.gt)}</div>
       </div>
       <div class="side">
-        <div class="prow"><div class="pr">${price}</div><button class="btn ghost sm" data-fav="${esc(p.s)}" aria-label="Favori" title="Favorilere ekle">${readFavList().includes(p.s) ? '★' : '☆'}</button>
+        <div class="pr">${price}</div><div class="prow"><button class="btn ghost sm${readFavList().includes(p.s) ? ' fav-on' : ''}" data-fav="${esc(p.s)}" aria-label="Favori" title="Favorilere ekle">${readFavList().includes(p.s) ? '★' : '☆'}</button>
         <button class="addi${state.lines.some(l => l.s === p.s) ? ' on' : ''}" data-add="${esc(p.s)}" aria-label="Teklife ekle" title="Teklife ekle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${state.lines.some(l => l.s === p.s) ? '<path d="M5 12.5l4.5 4.5L19 7.5"/>' : '<path d="M12 5v14M5 12h14"/>'}</svg></button></div>
       </div>
     </div>`;
