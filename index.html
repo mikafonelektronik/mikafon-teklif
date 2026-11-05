@@ -84,7 +84,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 @media (max-width:900px){.toolbar{grid-template-columns:minmax(0,1fr)}.toolbar>*{grid-column:1/-1!important}.favbar{flex-wrap:wrap}}
 .toolbar.actbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .toolbar.actbar>.btn{width:100%;height:40px;box-sizing:border-box;padding:0 8px;border-radius:12px;margin:0;grid-column:auto;white-space:nowrap}
-@media (max-width:600px){.toolbar.actbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.toolbar.actbar{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar.actbar>.btn{grid-column:auto!important}}
 .toolbar input::placeholder{color:var(--mute)}
 .col-list{height:0;min-height:100%;display:flex;flex-direction:column}
 .plist{display:flex;flex-direction:column;gap:8px;flex:1 1 0;min-height:0;overflow:auto;padding-right:4px}
@@ -272,6 +272,19 @@ td input.up{width:110px;text-align:right;padding:6px}
   .sheet .pv-cat{white-space:nowrap;overflow:hidden;font-size:10px}
   .sheet .pv-ds{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;margin-top:1px}
   .sheet .pv-table td:nth-child(2){width:100%;max-width:0}
+}
+@media (max-width:900px){
+#lines tr[data-row]{display:grid!important;grid-template-columns:28px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 56px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+#lines tr[data-row] td{width:auto!important;min-width:0!important;max-width:none!important;padding:0!important;border:0!important;background:transparent!important}
+#lines tr[data-row] td.grip-cell{grid-column:1;grid-row:1 / 3;width:28px!important}
+#lines td:nth-child(2){grid-column:2 / 5;grid-row:1}
+#lines td:nth-child(3){grid-column:2;grid-row:2}
+#lines td:nth-child(4){grid-column:3;grid-row:2}
+#lines td:nth-child(5){grid-column:4;grid-row:2}
+#lines td:nth-child(6){grid-column:5;grid-row:1}
+#lines td:nth-child(2)>div:first-child,#lines td input.up,#lines .stepper,#lines td.num span{width:100%!important;max-width:none!important;margin:0!important;box-sizing:border-box}
+#lines td:nth-child(6) .btn{width:100%;margin:0;height:40px;padding:0}
+#lines tr[data-row] td.num{text-align:left}
 }
 @media print{
   @page{size:A4;margin:12mm}
