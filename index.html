@@ -286,10 +286,17 @@ td input.up{width:110px;text-align:right;padding:6px}
       <div class="noprint" id="fxnote" style="margin-top:10px;border:1.5px solid #b42318;background:#fdf3f2;border-radius:10px;padding:10px 12px;color:#7a1a12;font-size:13px;line-height:1.6" hidden></div>
       <div class="toolbar noprint" style="margin-top:12px">
         <button class="btn" id="jpeg">PDF kaydet</button>
+        <button class="btn" id="shareBtn">Müşteriye gönder</button>
         <button class="btn ghost" id="save">Teklifi kaydet</button>
         <button class="btn ghost" id="clear">Temizle</button>
       </div>
       <div class="msg" id="msg"></div>
+      <div class="share-box tools-b" id="shareBox" hidden>
+        <div class="mute" style="width:100%">Telefonda "Müşteriye gönder" PDF'i doğrudan WhatsApp ya da e-postaya gönderir. Bu tarayıcıda PDF'i indirip aşağıdaki bağlantılardan mesaj taslağı açabilirsiniz; PDF'i taslağa elle ekleyin.</div>
+        <a class="btn sm" id="shareDl" href="#" download="teklif.pdf">PDF indir</a>
+        <a class="btn ghost sm" id="shareWa" href="#" target="_blank" rel="noopener">WhatsApp taslağı</a>
+        <a class="btn ghost sm" id="shareMail" href="#">E-posta taslağı</a>
+      </div>
       <div class="saved" id="saved"></div>
       <div class="cust-card" style="margin-top:12px"><div class="cust-h">Kayıtlı teklifler</div><div id="savedList"></div></div>
     </div>
@@ -1045,6 +1052,32 @@ $('jpeg').addEventListener('click', async () => {
     $('msg').textContent = 'JPEG oluşturulamadı: ' + (e && e.message ? e.message : 'bilinmeyen hata');
   } finally { btn.disabled = false; btn.textContent = old; }
 });
+$('shareBtn').addEventListener('click', async () => {
+  const btn = $('shareBtn'); const old = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Hazırlanıyor…';
+  try {
+    let blob;
+    try { blob = await buildVectorPdf(); }
+    catch (ve) { blob = makePdf(await buildJpeg(), 1240, 1754); }
+    const qno = ($('qno').value || '').trim();
+    const fname = 'Mikafon-Teklif-' + (qno || 'teklif').replace(/[^\p{L}\p{N}_-]+/gu, '_') + '.pdf';
+    const file = new File([blob], fname, { type: 'application/pdf' });
+    const who = ($('contact').value || $('cust').value || '').trim() || 'yetkili';
+    const seller = ($('seller').value || '').trim();
+    const text = 'Sayın ' + who + ', ' + (qno ? qno + ' numaralı ' : '') + 'teklifimiz ekte yer almaktadır. Geçerlilik süresi ' + ($('valid').value || '15') + ' gündür. Sorularınız için memnuniyetle yardımcı olurum.' + (seller ? '\n' + seller : '') + '\nMikafon Elektronik';
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Teklif ' + qno, text: text }); $('shareBox').hidden = true; return; }
+      catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    // Paylaşım desteklenmiyorsa: PDF indirme ve mesaj taslağı bağlantıları
+    $('shareDl').href = URL.createObjectURL(blob); $('shareDl').download = fname;
+    $('shareWa').href = 'https://wa.me/?text=' + encodeURIComponent(text);
+    $('shareMail').href = 'mailto:?subject=' + encodeURIComponent('Teklif ' + qno) + '&body=' + encodeURIComponent(text);
+    $('shareBox').hidden = false;
+  } catch (e) {
+    $('msg').textContent = 'Paylaşım hazırlanamadı: ' + (e && e.message ? e.message : 'bilinmeyen hata');
+  } finally { btn.disabled = false; btn.textContent = old; }
+});
 $('jpegClose').addEventListener('click', () => { $('jpegBox').hidden = true; });
 $('save').addEventListener('click', () => { const ok = persist() && saveQuote(); renderSaved(); $('saved').textContent = ok ? 'Taslak bu tarayıcıda kaydedildi.' : 'Taslak kaydedilemedi: tarayıcı depolaması kapalı olabilir.'; setTimeout(() => $('saved').textContent = '', 3000); });
 const LIST_KEY = 'mikafon_teklifler_v1';
@@ -1067,10 +1100,10 @@ $('savedList').addEventListener('click', e => {
   const c = e.target.closest('[data-copy]');
   if (c) {
     const x = readList()[+c.dataset.copy]; if (!x) return;
-    const data = Object.assign({}, x.data, { qno: newQuoteNo(), qdate: todayISO() });
+    const data = Object.assign({}, x.data, { qno: newQuoteNo(), qdate: todayISO(), cust: '', contact: '' });
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (err) {}
     restore(); renderList(); renderQuote(); persist();
-    $('saved').textContent = 'Kopya açıldı, yeni teklif no: ' + data.qno; setTimeout(() => $('saved').textContent = '', 3000);
+    $('saved').textContent = 'Kopya açıldı, yeni teklif no: ' + data.qno + ' · müşteri bilgilerini yeni müşteri için girin'; setTimeout(() => $('saved').textContent = '', 3000);
     return;
   }
   if (o) {
