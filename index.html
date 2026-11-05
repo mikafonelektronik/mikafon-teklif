@@ -143,7 +143,9 @@ table:has(#lines) th:nth-child(4){width:111.3px!important}
 table:has(#lines) th:nth-child(5){width:118.3px!important}
 table:has(#lines) th:nth-child(6){width:61.3px!important}
 td input.up{width:110px;text-align:right;padding:6px}
-.grip{display:inline-block;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--mute);font-size:16px;line-height:1;padding:6px 4px;letter-spacing:-2px}
+.grip{display:inline-flex;align-items:center;justify-content:center;width:28px;height:40px;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--mute);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.grip:hover{border-color:var(--blue);color:var(--blue)}
+.grip svg{width:10px;height:16px;display:block}
 .grip-cell{width:28px;padding-left:0;padding-right:0;text-align:center}
 #lines tr.dragging{opacity:.45}
 #lines tr.dragover td{background:#fdf3d6;box-shadow:inset 0 2px 0 var(--navy)}
@@ -166,6 +168,7 @@ td input.up{width:110px;text-align:right;padding:6px}
 .pv-rule{height:4px;margin:14px 0 16px;background:linear-gradient(90deg,#19a8e0 0 55%,#0a1a2f 55% 100%);border-radius:2px}
 .pv-rule2{margin:22px 0 12px}
 .pv-meta{font-size:12px;display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.pv-meta .sep{margin:0 8px;color:var(--mute)}
 .pv-wrap{overflow-x:auto}
 .pv-table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}
 .pv-table th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);font-weight:600;border-bottom:1px solid var(--line);padding:6px;text-align:left}
@@ -502,7 +505,7 @@ function renderQuote() {
     const r = conv1(l.cu);
     const unit = l.amt != null && !isNaN(r) ? l.amt * r : null;
     return `<tr data-row="${i}">
-      <td class="noprint grip-cell"><span class="grip" data-grip="${i}" title="Sürükleyerek sırala" aria-label="Sürükle">⋮⋮</span></td>
+      <td class="noprint grip-cell"><span class="grip" data-grip="${i}" title="Sürükleyerek sırala" aria-label="Sürükleyerek sırala"><svg viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="2.5" r="1.5"/><circle cx="7.5" cy="2.5" r="1.5"/><circle cx="2.5" cy="8" r="1.5"/><circle cx="7.5" cy="8" r="1.5"/><circle cx="2.5" cy="13.5" r="1.5"/><circle cx="7.5" cy="13.5" r="1.5"/></svg></span></td>
       <td><div style="font-weight:600;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:200px;max-width:320px">${esc(l.m)}</div>
           ${l.cu === 'EUR' ? '<div style="color:var(--mute);font-size:12px">Liste fiyatı EUR</div>' : ''}</td>
       <td class="num"><input class="up" type="number" min="0" step="0.01" data-i="${i}" data-f="up"
@@ -575,7 +578,7 @@ function renderQuote() {
       <div class="pv-meta">
         ${$('proj').value.trim() ? `<div><strong>Proje Adı:</strong> ${esc($('proj').value.trim())}</div>` : ''}
         <div><strong>Sayın:</strong> ${esc($('cust').value) || '—'}${$('contact').value ? ' · ' + esc($('contact').value) : ''}</div>
-        <div><strong>Teklif no:</strong> ${esc($('qno').value)} · <strong>Geçerlilik:</strong> ${esc($('valid').value)} gün · <strong>Hazırlayan:</strong> ${esc($('seller').value)}</div>
+        <div><strong>Teklif no:</strong> ${esc($('qno').value)} <span class="sep">·</span> <strong>Geçerlilik:</strong> ${esc($('valid').value)} gün <span class="sep">·</span> <strong>Hazırlayan:</strong> ${esc($('seller').value)}</div>
       </div>
       <div class="pv-wrap"><table class="pv-table">
         <thead><tr><th></th><th>Ürün</th><th class="num">Adet</th><th class="num">Birim</th><th class="num">Tutar</th></tr></thead>
