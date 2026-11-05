@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Mikafon Teklif Oluşturucu</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1b2a3a">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Mikafon ürün ve fiyat teklif oluşturucu">
 <meta property="og:title" content="Mikafon Teklif Oluşturucu">
 <meta property="og:description" content="Ürün ekle, fiyatları ve kurları kontrol et, PDF teklifi oluştur.">
@@ -199,6 +202,7 @@ td input.up{width:110px;text-align:right;padding:6px}
   .top{position:static}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+.tools{margin:0 0 8px}.tools summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}.tools-b{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}.tools-b textarea{width:100%;font:inherit;padding:8px;border:1px solid rgba(127,127,127,.4);border-radius:8px;background:transparent;color:inherit;box-sizing:border-box}.tools-b .field{flex:1 1 180px}.tools-h{width:100%;font-weight:600;margin-top:6px}
 </style>
 </head>
 <body>
@@ -230,6 +234,20 @@ td input.up{width:110px;text-align:right;padding:6px}
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
     </div>
+    <details class="tools" id="tools">
+      <summary>Toplu ekle, paketler</summary>
+      <div class="tools-b">
+        <label class="mute" for="bulk" style="width:100%">Her satıra stok kodu ya da model ve adet yazın (örnek: RB6609 3). Excel'den iki sütunu kopyalayıp yapıştırabilirsiniz.</label>
+        <textarea id="bulk" rows="4" placeholder="RB6609 3&#10;RBFAN2 1"></textarea>
+        <button type="button" class="btn sm" id="bulkAdd">Teklife ekle</button>
+        <div class="tools-h">Paketler</div>
+        <div class="field"><input type="text" id="pkgName" placeholder="Paket adı"></div>
+        <button type="button" class="btn ghost sm" id="pkgSave">Teklifi paket olarak kaydet</button>
+        <select id="pkgSel" aria-label="Paket"></select>
+        <button type="button" class="btn sm" id="pkgAdd">Paketi ekle</button>
+        <button type="button" class="btn del sm" id="pkgDel">Paketi sil</button>
+      </div>
+    </details>
     <div class="note" id="cnt" style="margin-bottom:8px"></div>
     <div class="plist" id="plist"></div>
   </section>
@@ -355,7 +373,7 @@ function renderList() {
     return 9;
   };
   const all = PRODUCTS.map(p => ({ p, t: tier(p) }))
-    .filter(x => (!g || x.p.gt === g) && (!bd || x.p.b === bd) && x.t < 9)
+    .filter(x => (!g || (g === '__fav' ? readFavList().includes(x.p.s) : x.p.gt === g)) && (!bd || x.p.b === bd) && x.t < 9)
     .sort((a, b) => a.t - b.t).map(x => x.p);
   const items = all.slice(0, listLimit);
   $('cnt').textContent = all.length + ' ürün bulundu' + (all.length > listLimit ? ' · ilk ' + listLimit + ' gösteriliyor' : '');
@@ -372,10 +390,15 @@ function renderList() {
       </div>
       <div class="side">
         <div class="pr">${price}</div>
+        <button class="btn ghost sm" data-fav="${esc(p.s)}" aria-label="Favori" title="Favorilere ekle">${readFavList().includes(p.s) ? '★' : '☆'}</button>
         <button class="btn sm" data-add="${esc(p.s)}">Ekle</button>
       </div>
     </div>`;
   }).join('') || '<div class="empty">Sonuç yok</div>';
+  if (!all.length && nq) {
+    const sug = PRODUCTS.map(p => ({ p, d: fuzzyDist(nq, normS([p.m, p.c, p.b].join(' '))) })).filter(x => x.d <= 3).sort((a, b) => a.d - b.d).slice(0, 5);
+    if (sug.length) $('plist').innerHTML = '<div class="note">Bunu mu demek istediniz: ' + sug.map(x => '<button type="button" class="btn ghost sm" data-sugg="' + esc(x.p.m) + '">' + esc(x.p.m) + '</button>').join(' ') + '</div>';
+  }
   if (all.length > items.length) {
     $('plist').insertAdjacentHTML('beforeend', `<div class="note">${all.length} ürün bulundu, ilk ${items.length} gösteriliyor. <button type="button" class="btn ghost sm" data-more="1">Daha fazla göster</button></div>`);
   }
@@ -544,7 +567,7 @@ function unlock() { try { sessionStorage.setItem(AUTH, '1'); } catch (e) {} $('g
 
 (function init() {
   const groups = [...new Set(PRODUCTS.map(p => p.gt))];
-  $('grp').innerHTML = '<option value="">Tüm gruplar</option>' + groups.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+  $('grp').innerHTML = '<option value="">Tüm gruplar</option><option value="__fav">★ Favoriler</option>' + groups.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
   const brands = [...new Set(PRODUCTS.map(p => p.b).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
   $('brand').innerHTML = '<option value="">Tüm markalar</option>' + brands.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join('');
   restore();
@@ -565,22 +588,123 @@ $('q').addEventListener('input', resetList);
 $('grp').addEventListener('change', resetList);
 $('brand').addEventListener('change', resetList);
 function flashBtn(b) { b.textContent = 'Eklendi ✓'; b.style.background = '#1f8a4c'; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = 'Ekle'; b.style.background = ''; }, 1400); }
-$('plist').addEventListener('click', e => { if (e.target.closest('[data-more]')) { listLimit += 80; renderList(); return; } const b = e.target.closest('[data-add]'); if (b) { addLine(b.dataset.add); flashBtn(b); } });
-// Sesle arama ve ekleme (Chrome/Edge, mikrofon izni gerekir). Komut sonunda "ekle" varsa ilk sonuç teklife eklenir.
+$('plist').addEventListener('click', e => {
+  if (e.target.closest('[data-more]')) { listLimit += 80; renderList(); return; }
+  const fv = e.target.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); renderList(); return; }
+  const sg = e.target.closest('[data-sugg]'); if (sg) { $('q').value = sg.dataset.sugg; resetList(); return; }
+  const b = e.target.closest('[data-add]'); if (b) { addLine(b.dataset.add); flashBtn(b); }
+});
+// Yardımcılar: favoriler, paketler, toplu ekleme (alt işlevler üst düzeyde, sesli komutlar da kullanır)
+function readFavList() { try { const a = JSON.parse(localStorage.getItem('mikafon-favoriler') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function toggleFav(code) {
+  let a = readFavList();
+  a = a.includes(code) ? a.filter(x => x !== code) : a.concat(code);
+  try { localStorage.setItem('mikafon-favoriler', JSON.stringify(a)); } catch (e) {}
+}
+function readPkgs() { try { const a = JSON.parse(localStorage.getItem('mikafon-paketler') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function writePkgs(a) { try { localStorage.setItem('mikafon-paketler', JSON.stringify(a)); return true; } catch (e) { return false; } }
+function renderPkgSel() {
+  const a = readPkgs();
+  $('pkgSel').innerHTML = a.length
+    ? a.map((x, i) => '<option value="' + i + '">' + esc(x.name) + ' (' + x.lines.length + ' kalem)</option>').join('')
+    : '<option value="">Kayıtlı paket yok</option>';
+}
+// Ürünü belirtilen adetle teklife ekler (varsa adedi üstüne ekler)
+function addQty(code, qty) {
+  const p = PRODUCTS.find(x => x.s === code);
+  if (!p) return false;
+  const before = (state.lines.find(l => l.s === code) || { qty: 0 }).qty;
+  addLine(code);
+  const l = state.lines.find(x => x.s === code);
+  if (l) l.qty = before + Math.max(1, qty || 1);
+  persist();
+  renderQuote();
+  return true;
+}
+// Satır satır metin: "KOD" ya da "KOD adet"; sekme, noktalı virgül veya virgülle ayrılmış (Excel yapıştırma) da olur
+function parseBulk(text) {
+  const out = [], missing = [];
+  text.split(/\r?\n/).forEach(raw => {
+    const t = raw.trim();
+    if (!t) return;
+    let code = t, qty = 1;
+    const parts = t.split(/\t|;|,\s*/).map(x => x.trim()).filter(Boolean);
+    if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 1])) { qty = Number(parts[parts.length - 1]); code = parts.slice(0, -1).join(' ').trim(); }
+    else { const m = t.match(/^(.*?)\s+(\d+)$/); if (m) { code = m[1].trim(); qty = Number(m[2]); } }
+    const n = (x) => String(x).toLocaleLowerCase('tr-TR').replace(/[^\p{L}\p{N}]+/gu, '');
+    const p = PRODUCTS.find(x => x.s === code) || PRODUCTS.find(x => n(x.m) === n(code));
+    if (p) out.push({ p, qty: qty || 1 }); else missing.push(code);
+  });
+  return { out, missing };
+}
+$('bulkAdd').addEventListener('click', () => {
+  const r = parseBulk($('bulk').value);
+  r.out.forEach(x => addQty(x.p.s, x.qty));
+  if (r.out.length) $('bulk').value = '';
+  $('cnt').textContent = r.out.length + ' satır teklife eklendi' + (r.missing.length ? ' · bulunamayan: ' + r.missing.join(', ') : '');
+});
+$('pkgSave').addEventListener('click', () => {
+  if (!state.lines.length) { $('cnt').textContent = 'Paket için teklifte ürün yok'; return; }
+  const a = readPkgs();
+  const name = $('pkgName').value.trim() || ('Paket ' + (a.length + 1));
+  a.push({ name: name, lines: state.lines.map(l => ({ s: l.s, qty: l.qty })) });
+  writePkgs(a);
+  $('pkgName').value = '';
+  renderPkgSel();
+  $('pkgSel').value = String(a.length - 1);
+  $('cnt').textContent = '"' + name + '" paketi kaydedildi';
+});
+$('pkgAdd').addEventListener('click', () => {
+  const a = readPkgs(), i = Number($('pkgSel').value);
+  if (!a[i]) { $('cnt').textContent = 'Önce bir paket seçin'; return; }
+  let added = 0;
+  a[i].lines.forEach(l => { if (addQty(l.s, l.qty)) added++; });
+  $('cnt').textContent = '"' + a[i].name + '" paketinden ' + added + ' kalem eklendi';
+});
+$('pkgDel').addEventListener('click', () => {
+  const a = readPkgs(), i = Number($('pkgSel').value);
+  if (!a[i]) return;
+  const name = a[i].name;
+  a.splice(i, 1);
+  writePkgs(a);
+  renderPkgSel();
+  $('cnt').textContent = '"' + name + '" paketi silindi';
+});
+renderPkgSel();
+if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.serviceWorker.register('sw.js').catch(() => {}); }
+
+// Sesle arama ve komutlar (Chrome/Edge, mikrofon izni gerekir).
+// "RB6609" arar, "RB6609 ekle" ekler, "üç tane RB6609 ekle" üç adet ekler, "RB6609 sil" siler, "RB6609 beş yap" adedi değiştirir.
 (function () {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const mic = $('mic');
   if (!SR || !mic) return;
   mic.hidden = false;
-  // Türkçe konuşmada harf ve sayı adları: "be"→b, "te"→t, "beş"→5 gibi.
-  const LETTER = {be:'b',bi:'b',bee:'b',te:'t',ti:'t',de:'d',di:'d',ef:'f',ge:'g',ce:'c',ci:'c',ke:'k',ka:'k',el:'l',em:'m',en:'n',pe:'p',pi:'p',er:'r',ar:'r',es:'s',si:'s',ve:'v',vi:'v',ze:'z',zi:'z',he:'h',hi:'h',ye:'y',yi:'y',kü:'',x:'x'};
-  const NUM = {bir:'1',iki:'2',üç:'3',uç:'3',dört:'4',beş:'5',altı:'6',yedi:'7',sekiz:'8',dokuz:'9',sıfır:'0',on:'10',yüz:'100'};
-  function spokenToCode(text) {
-    return text.toLocaleLowerCase('tr-TR').split(/\s+/).filter(Boolean).map(w => {
-      if (NUM[w] !== undefined) return NUM[w];
-      if (LETTER[w] !== undefined) return LETTER[w];
-      return w;
-    }).join(' ');
+  const NUMW = { sıfır: 0, bir: 1, iki: 2, üç: 3, uç: 3, dört: 4, beş: 5, altı: 6, yedi: 7, sekiz: 8, dokuz: 9, on: 10, yirmi: 20, yüz: 100 };
+  const LETTER = { be: 'b', bi: 'b', bee: 'b', te: 't', ti: 't', de: 'd', di: 'd', ef: 'f', ge: 'g', ce: 'c', ci: 'c', ke: 'k', ka: 'k', el: 'l', em: 'm', en: 'n', pe: 'p', pi: 'p', er: 'r', ar: 'r', es: 's', si: 's', ve: 'v', vi: 'v', ze: 'z', zi: 'z', he: 'h', hi: 'h', ye: 'y', yi: 'y' };
+  const toNum = w => /^\d+$/.test(w) ? Number(w) : (NUMW[w] !== undefined ? NUMW[w] : null);
+  const toCode = text => text.toLocaleLowerCase('tr-TR').split(/\s+/).filter(Boolean).map(w => {
+    const n = toNum(w); if (n !== null) return String(n);
+    return LETTER[w] !== undefined ? LETTER[w] : w;
+  }).join(' ');
+  function parseVoice(heard) {
+    let t = heard.trim().toLocaleLowerCase('tr-TR').replace(/[.,!?]+$/, '');
+    let verb = 'ara', num = null;
+    const m = t.match(/^(.*)\s+(ekle|sil|yap)$/);
+    if (m) { verb = m[2]; t = m[1].trim(); }
+    let parts = t.split(/\s+/).filter(Boolean);
+    if (verb === 'yap' && parts.length > 1 && toNum(parts[parts.length - 1]) !== null) { num = toNum(parts.pop()); }
+    if (verb === 'ekle') {
+      if (parts.length > 1 && toNum(parts[0]) !== null) { num = toNum(parts.shift()); if (parts[0] === 'tane') parts.shift(); }
+      else if (parts.length > 1 && toNum(parts[parts.length - 1]) !== null) { num = toNum(parts.pop()); }
+    }
+    return { verb, num, text: parts.join(' ') };
+  }
+  // Arama kutusuna yazıp ilk sonucu döndürür; önce söylenen metin, olmazsa harf/sayılara çevrilmiş hali denenir
+  function findTop(text) {
+    const tryText = v => { $('q').value = v; resetList(); const first = document.querySelector('#plist [data-add]'); return first ? PRODUCTS.find(x => x.s === first.dataset.add) : null; };
+    if (!text) return null;
+    return tryText(text) || (toCode(text) !== text ? tryText(toCode(text)) : null);
   }
   mic.addEventListener('click', () => {
     const rec = new SR();
@@ -591,23 +715,31 @@ $('plist').addEventListener('click', e => { if (e.target.closest('[data-more]'))
     rec.onresult = e => {
       mic.textContent = 'Sesle';
       const heard = (e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '').trim();
-      const add = /\s*ekle$/i.test(heard);
-      let t = heard.replace(/\s*ekle$/i, '').trim();
-      const count = () => document.querySelectorAll('#plist [data-add]').length;
-      $('q').value = t;
-      resetList();
-      if (!count()) {
-        // Konuşma tanıma harf ve sayıları kelime olarak verir ("ar bi altı bin..."); bunları çevirip tekrar dene.
-        const conv = spokenToCode(t);
-        if (conv && conv !== t) { $('q').value = conv; resetList(); }
+      const cmd = parseVoice(heard);
+      const p = findTop(cmd.text);
+      if (!p) { $('cnt').textContent = 'Duyulan: "' + heard + '" · ürün bulunamadı'; return; }
+      if (cmd.verb === 'ara') { $('cnt').textContent = p.m + ' için sonuçlar'; return; }
+      if (cmd.verb === 'ekle') {
+        addQty(p.s, cmd.num || 1);
+        $('cnt').textContent = p.m + ' teklife eklendi' + (cmd.num > 1 ? ' (' + cmd.num + ' adet)' : '');
+        const b = document.querySelector('#plist [data-add="' + p.s + '"]'); if (b) flashBtn(b);
+        return;
       }
-      if (!count()) { $('cnt').textContent = 'Duyulan: "' + heard + '" · ürün bulunamadı'; return; }
-      if (!add) return;
-      const first = document.querySelector('#plist [data-add]');
-      const p = PRODUCTS.find(x => x.s === first.dataset.add);
-      addLine(first.dataset.add);
-      flashBtn(first);
-      $('cnt').textContent = (p ? p.m : 'Ürün') + ' teklife eklendi';
+      if (cmd.verb === 'sil') {
+        const before = state.lines.length;
+        state.lines = state.lines.filter(l => l.s !== p.s);
+        if (state.lines.length === before) { $('cnt').textContent = 'Teklifte yok: ' + p.m; return; }
+        persist(); renderQuote();
+        $('cnt').textContent = p.m + ' tekliften silindi';
+        return;
+      }
+      if (cmd.verb === 'yap') {
+        const l = state.lines.find(x => x.s === p.s);
+        if (!l) { $('cnt').textContent = 'Teklifte yok: ' + p.m; return; }
+        if (!cmd.num) { $('cnt').textContent = 'Adedi söyleyin, örnek: ' + p.m + ' beş yap'; return; }
+        l.qty = Math.max(1, cmd.num); persist(); renderQuote();
+        $('cnt').textContent = p.m + ' adedi ' + l.qty + ' yapıldı';
+      }
     };
     rec.onerror = () => { mic.textContent = 'Sesle'; $('cnt').textContent = 'Ses tanınamadı, tekrar deneyin'; };
     rec.onend = () => { mic.textContent = 'Sesle'; };
