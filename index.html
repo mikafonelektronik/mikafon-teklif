@@ -202,7 +202,7 @@ td input.up{width:110px;text-align:right;padding:6px}
   .top{position:static}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
-.favbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}.favtabs{display:flex;flex-wrap:wrap;gap:6px}.tools{margin:0 0 8px}.tools summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}.tools-b{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}.tools-b textarea{width:100%;font:inherit;padding:8px;border:1px solid rgba(127,127,127,.4);border-radius:8px;background:transparent;color:inherit;box-sizing:border-box}.tools-b .field{flex:1 1 180px}.tools-h{width:100%;font-weight:600;margin-top:6px}
+.custhist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.favbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}.favtabs{display:flex;flex-wrap:wrap;gap:6px}.tools{margin:0 0 8px}.tools summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}.tools-b{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}.tools-b textarea{width:100%;font:inherit;padding:8px;border:1px solid rgba(127,127,127,.4);border-radius:8px;background:transparent;color:inherit;box-sizing:border-box}.tools-b .field{flex:1 1 180px}.tools-h{width:100%;font-weight:600;margin-top:6px}
 </style>
 </head>
 <body>
@@ -258,7 +258,7 @@ td input.up{width:110px;text-align:right;padding:6px}
       <div class="cust-card">
         <div class="cust-h">Müşteri bilgileri</div>
         <div class="grid2">
-          <div class="field"><label for="cust">Firma / müşteri</label><input type="text" id="cust"></div>
+          <div class="field"><label for="cust">Firma / müşteri</label><input type="text" id="cust"><div class="custhist" id="custHist" hidden></div></div>
           <div class="field"><label for="contact">Yetkili kişi</label><input type="text" id="contact"></div>
         </div>
       </div>
@@ -569,8 +569,21 @@ function restore() {
   } catch (e) {}
 }
 function newQuoteNo() {
-  const d = new Date();
-  return 'MKF-' + todayISO().replace(/-/g, '') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0');
+  const yr = new Date().getFullYear();
+  const seller = (($('seller') && $('seller').value) || '').trim();
+  const code = seller.split(/\s+/).map(w => (w[0] || '')).join('').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'MK';
+  const prefix = 'MK-' + yr + '-' + code + '-';
+  let max = 0;
+  readList().map(x => x.qno || '').concat([$('qno') ? $('qno').value : '']).forEach(q => {
+    if (q.startsWith(prefix)) { const n = parseInt(q.slice(prefix.length), 10); if (n > max) max = n; }
+  });
+  return prefix + String(max + 1).padStart(3, '0');
+}
+// Aynı teklif numarası ikinci kez kullanılırsa uyarı verir
+function checkQnoDup() {
+  const q = $('qno').value.trim();
+  const dup = q && readList().some(x => x.qno === q && (!x.data || x.data.cust !== $('cust').value));
+  if (dup) $('msg').textContent = 'Bu teklif no ("' + q + '") başka bir müşteri için kayıtlı. Yeni bir numara seçin.';
 }
 function unlock() { try { sessionStorage.setItem(AUTH, '1'); } catch (e) {} $('gate').style.display = 'none'; }
 
@@ -1132,6 +1145,23 @@ $('favDel').addEventListener('click', () => {
   $('cnt').textContent = '"' + name + '" paketi silindi';
 });
 renderFavTabs();
+function showCustHist() {
+  const q = $('cust').value.trim().toLocaleLowerCase('tr-TR');
+  const box = $('custHist');
+  if (q.length < 2) { box.hidden = true; box.innerHTML = ''; return; }
+  const hits = readList().map((x, i) => ({ x, i })).filter(h => (h.x.cust || '').toLocaleLowerCase('tr-TR').includes(q)).slice(0, 5);
+  box.hidden = !hits.length;
+  box.innerHTML = hits.map(h => '<button type="button" class="btn ghost sm" data-hist="' + h.i + '">' + esc(h.x.qno || '-') + ' · ' + esc((h.x.data && h.x.data.qdate) || '') + '</button>').join(' ');
+}
+$('cust').addEventListener('input', showCustHist);
+$('custHist').addEventListener('click', e => {
+  const b = e.target.closest('[data-hist]'); if (!b) return;
+  const x = readList()[+b.dataset.hist]; if (!x) return;
+  try { localStorage.setItem(KEY, JSON.stringify(x.data)); } catch (err) {}
+  restore(); renderList(); renderQuote();
+  $('saved').textContent = 'Teklif açıldı: ' + x.qno; setTimeout(() => $('saved').textContent = '', 3000);
+});
+$('qno').addEventListener('input', checkQnoDup);
 $('brandHome').addEventListener('click', e => { e.preventDefault(); location.reload(); });
 $('jpegClose').addEventListener('click', () => { $('jpegBox').hidden = true; });
 $('save').addEventListener('click', () => { const ok = persist() && saveQuote(); renderSaved(); $('saved').textContent = ok ? 'Taslak bu tarayıcıda kaydedildi.' : 'Taslak kaydedilemedi: tarayıcı depolaması kapalı olabilir.'; setTimeout(() => $('saved').textContent = '', 3000); });
