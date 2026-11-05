@@ -65,7 +65,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .stepper{display:flex;align-items:stretch;height:38px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
 .stp{width:28px;flex:0 0 28px;border:0;background:#f4f2ed;color:var(--navy);font-size:18px;line-height:1;cursor:pointer;padding:0}
 .stepper input.qty{border:0;border-radius:0;height:auto;padding:0 2px;text-align:center;min-width:0;flex:1 1 auto;width:100%}
-.btn.del{background:#fff;color:var(--danger);border:1px solid #f2c4bf}
+.btn.del{background:#fdeceb;color:#b42318;border:1px solid #e8867d}
 .btn.del.armed{background:#2e9e5b;color:#fff;border:1px solid #2e9e5b}
 .btn.full{width:100%}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
@@ -276,7 +276,7 @@ td input.up{width:110px;text-align:right;padding:6px}
   .sheet .pv-table td:nth-child(2){width:100%;max-width:0}
 }
 @media (max-width:900px){
-#lines tr[data-row]{display:grid!important;grid-template-columns:28px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 56px;gap:8px;align-items:center;padding:10px 6px;border-bottom:1px solid var(--line)}
+#lines tr[data-row]{display:grid!important;grid-template-columns:28px minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,0.85fr) 56px;gap:8px;align-items:center;padding:10px 6px;border-bottom:1px solid var(--line)}
 #lines tr[data-row] td{width:auto!important;min-width:0!important;max-width:none!important;padding:0!important;border:0!important}
 #lines tr[data-row]:not(.dragover) td{background:#fff!important}
 #lines tr[data-row]{background:#fff;position:relative}
@@ -285,7 +285,7 @@ td input.up{width:110px;text-align:right;padding:6px}
 #lines td:nth-child(2){grid-column:2 / 5;grid-row:1}
 #lines td:nth-child(3){grid-column:2;grid-row:2}
 #lines td:nth-child(4){grid-column:3;grid-row:2}
-#lines td:nth-child(5){grid-column:4;grid-row:2}
+#lines td:nth-child(5){grid-column:4 / 6;grid-row:2}
 #lines td:nth-child(6){grid-column:5;grid-row:1}
 #lines td:nth-child(2)>div:first-child,#lines td input.up,#lines .stepper,#lines td.num span{width:100%!important;max-width:none!important;margin:0!important;box-sizing:border-box}
 #lines td:nth-child(6) .btn{width:100%;margin:0;height:40px;padding:0}
@@ -634,7 +634,7 @@ function renderQuote() {
       </div>
       <div class="pv-rule"></div>
       <div class="pv-meta">
-        ${$('proj').value.trim() ? `<div><strong>Proje Adı:</strong> ${esc($('proj').value.trim())}</div>` : ''}
+        <div><strong>Proje Adı:</strong> ${esc($('proj').value.trim()) || '—'}</div>
         <div><strong>Sayın:</strong> ${esc($('cust').value) || '—'}${$('contact').value ? ' · ' + esc($('contact').value) : ''}</div>
         <div><strong>Teklif no:</strong> ${esc($('qno').value)} <span class="sep">·</span> <strong>Geçerlilik:</strong> ${esc($('valid').value)} gün <span class="sep">·</span> <strong>Hazırlayan:</strong> ${esc($('seller').value)}</div>
       </div>
