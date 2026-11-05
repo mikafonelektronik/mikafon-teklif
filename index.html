@@ -88,6 +88,10 @@ th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute
 td.num,th.num{text-align:right;white-space:nowrap}
 td input.qty{width:64px;text-align:right;padding:6px}
 td input.up{width:110px;text-align:right;padding:6px}
+.grip{display:inline-block;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--mute);font-size:16px;line-height:1;padding:6px 4px;letter-spacing:-2px}
+.grip-cell{width:28px;padding-left:0;padding-right:0;text-align:center}
+#lines tr.dragging{opacity:.45}
+#lines tr.dragover td{background:#fdf3d6;box-shadow:inset 0 2px 0 var(--navy)}
 .totals{margin-top:12px;margin-left:auto;max-width:340px}
 .totals div{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
 .totals .grand{font-size:17px;font-weight:700;color:var(--navy);border-top:2px solid var(--navy);margin-top:6px;padding-top:8px}
@@ -259,6 +263,7 @@ td input.up{width:110px;text-align:right;padding:6px}
 
   <section class="card" id="quote" aria-label="Teklif">
     <div class="editable">
+      <div class="field" style="margin-bottom:12px"><label for="proj">Proje adı</label><input type="text" id="proj" placeholder="örn. Ankara Hastane Projesi"></div>
       <div class="cust-card">
         <div class="cust-h">Müşteri bilgileri</div>
         <div class="grid2">
@@ -282,7 +287,7 @@ td input.up{width:110px;text-align:right;padding:6px}
       </div>
       <div style="overflow-x:auto">
         <table>
-          <thead><tr><th>Ürün</th><th class="num">Birim fiyat</th><th class="num">Adet</th><th class="num">Tutar</th><th class="noprint"></th></tr></thead>
+          <thead><tr><th class="noprint"></th><th>Ürün</th><th class="num">Birim fiyat</th><th class="num">Adet</th><th class="num">Tutar</th><th class="noprint"></th></tr></thead>
           <tbody id="lines"></tbody>
         </table>
       </div>
@@ -437,7 +442,8 @@ function renderQuote() {
   $('lines').innerHTML = state.lines.map((l, i) => {
     const r = conv1(l.cu);
     const unit = l.amt != null && !isNaN(r) ? l.amt * r : null;
-    return `<tr>
+    return `<tr data-row="${i}">
+      <td class="noprint grip-cell"><span class="grip" data-grip="${i}" title="Sürükleyerek sırala" aria-label="Sürükle">⋮⋮</span></td>
       <td><div style="font-weight:600">${esc(l.m)}</div>
           ${l.cu === 'EUR' ? '<div style="color:var(--mute);font-size:12px">Liste fiyatı EUR</div>' : ''}</td>
       <td class="num"><input class="up" type="number" min="0" step="0.01" data-i="${i}" data-f="up"
@@ -508,6 +514,7 @@ function renderQuote() {
       </div>
       <div class="pv-rule"></div>
       <div class="pv-meta">
+        ${$('proj').value.trim() ? `<div><strong>Proje:</strong> ${esc($('proj').value.trim())}</div>` : ''}
         <div><strong>Sayın:</strong> ${esc($('cust').value) || '—'}${$('contact').value ? ' · ' + esc($('contact').value) : ''}</div>
         <div><strong>Teklif no:</strong> ${esc($('qno').value)} · <strong>Geçerlilik:</strong> ${esc($('valid').value)} gün · <strong>Hazırlayan:</strong> ${esc($('seller').value)}</div>
       </div>
@@ -544,7 +551,7 @@ function fitSheet() {
 }
 window.addEventListener('resize', () => fitSheet());
 
-const FIELDS = ['cust','contact','qno','qdate','valid','seller','cur','rateUsd','rateEur','disc','vat'];
+const FIELDS = ['proj','cust','contact','qno','qdate','valid','seller','cur','rateUsd','rateEur','disc','vat'];
 
 function persist() {
   try {
@@ -831,6 +838,43 @@ $('lines').addEventListener('click', e => {
   renderQuote();
 });
 
+// Ürünleri sürükleyerek sırala (tutamaçtan tutup yukarı/aşağı bırakın; dokunmatik ekranda da çalışır)
+let dragFrom = null, dragOver = null;
+function markDrag() {
+  $('lines').querySelectorAll('tr[data-row]').forEach(r => {
+    const n = Number(r.dataset.row);
+    r.classList.toggle('dragging', n === dragFrom);
+    r.classList.toggle('dragover', n === dragOver && dragOver !== dragFrom);
+  });
+}
+$('lines').addEventListener('pointerdown', e => {
+  const g = e.target.closest('[data-grip]'); if (!g) return;
+  e.preventDefault();
+  dragFrom = dragOver = Number(g.dataset.grip);
+  try { g.setPointerCapture(e.pointerId); } catch (_) {}
+  markDrag();
+});
+$('lines').addEventListener('pointermove', e => {
+  if (dragFrom === null) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const tr = el && el.closest ? el.closest('tr[data-row]') : null;
+  if (!tr) return;
+  const n = Number(tr.dataset.row);
+  if (n !== dragOver) { dragOver = n; markDrag(); }
+});
+function endDrag() {
+  if (dragFrom === null) return;
+  const from = dragFrom, to = dragOver;
+  dragFrom = dragOver = null;
+  if (from !== to && state.lines[from]) {
+    const [item] = state.lines.splice(from, 1);
+    state.lines.splice(to, 0, item);
+    persist();
+  }
+  renderQuote();
+}
+$('lines').addEventListener('pointerup', endDrag);
+$('lines').addEventListener('pointercancel', endDrag);
 FIELDS.forEach(k => $(k).addEventListener('input', () => { persist(); renderList(); renderQuote(); }));
 $('cur').addEventListener('change', () => { persist(); renderList(); renderQuote(); });
 const SHEET = { W: 1240, P: 70, PAGE_H: 1754, BOTTOM: 290 };
