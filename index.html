@@ -102,11 +102,47 @@ th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertic
 th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);font-weight:600}
 td.num,th.num{text-align:right;white-space:nowrap}
 td input.qty{width:64px;text-align:right;padding:6px}
+#lines .stepper{width:112px;height:40px;margin-left:auto}
+table:has(#lines){table-layout:fixed}
+table:has(#lines) th:nth-child(1),#lines td:nth-child(1){width:28px}
+table:has(#lines) th:nth-child(3),#lines td:nth-child(3){width:140px}
+table:has(#lines) th:nth-child(4),#lines td:nth-child(4){width:130px}
+table:has(#lines) th:nth-child(5),#lines td:nth-child(5){width:130px}
+table:has(#lines) th:nth-child(6),#lines td:nth-child(6){width:60px}
+/* Kutular arası boşluk eşit: her kutunun iki yanında 0,3 cm (5,67 px) boşluk */
+#lines td{padding-left:0!important;padding-right:0!important}
+#lines td:nth-child(2){width:181.3px!important}
+#lines td:nth-child(3){width:131.3px!important}
+#lines td:nth-child(4){width:124.3px!important}
+#lines td:nth-child(5){width:141.3px!important}
+#lines td:nth-child(6){width:68.3px!important}
+#lines td:nth-child(2) > div:first-child{width:170px!important;margin:0 5.67px!important}
+#lines td input.up{width:120px!important;margin:0 5.67px}
+#lines .stepper{width:112px!important;margin:0 5.67px!important}
+#lines td.num span{width:130px!important;margin:0 5.67px}
+#lines td:nth-child(6) .btn{width:56px;margin:0 5.67px;padding:6px 0;text-align:center}
+#lines td:nth-child(6){text-align:left}
+#lines td.num span{font-weight:700}
+#lines td:nth-child(6) .btn{padding:6px 10px}
+#lines td input.up{height:40px;box-sizing:border-box;text-align:center}
+#lines input[type=number]{-moz-appearance:textfield;appearance:textfield}
+#lines input[type=number]::-webkit-inner-spin-button,#lines input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+table:has(#lines) th.num,#lines td.num{text-align:center}
+table:has(#lines) th:nth-child(3),table:has(#lines) th:nth-child(4),table:has(#lines) th:nth-child(5){text-align:center}
+#lines td.num span{justify-content:center!important}
+#lines .stepper{margin-left:0;margin-right:auto}
+#lines td.num span{width:100%;height:40px;box-sizing:border-box;display:flex!important;align-items:center;justify-content:flex-end;min-width:0!important}
+#lines td:nth-child(2) > div:first-child{min-height:40px;box-sizing:border-box;display:flex;align-items:center;width:100%;min-width:0!important;max-width:none!important;white-space:normal!important;overflow-wrap:anywhere;line-height:1.3;padding:6px 10px!important}
+table:has(#lines){min-width:720px;width:auto}
+table:has(#lines) th:nth-child(2),#lines td:nth-child(2){width:170px}
 td input.up{width:110px;text-align:right;padding:6px}
 .grip{display:inline-block;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--mute);font-size:16px;line-height:1;padding:6px 4px;letter-spacing:-2px}
 .grip-cell{width:28px;padding-left:0;padding-right:0;text-align:center}
 #lines tr.dragging{opacity:.45}
 #lines tr.dragover td{background:#fdf3d6;box-shadow:inset 0 2px 0 var(--navy)}
+#lines tr[data-row] td{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+#lines tr[data-row]:nth-child(odd):not(.dragover) td{background:#fff}
+#lines tr[data-row]:nth-child(even):not(.dragover) td{background:#fff}
 .totals{margin-top:12px;margin-left:auto;max-width:340px}
 .totals div{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
 .totals .grand{font-size:17px;font-weight:700;color:var(--navy);border-top:2px solid var(--navy);margin-top:6px;padding-top:8px}
@@ -458,12 +494,12 @@ function renderQuote() {
     const unit = l.amt != null && !isNaN(r) ? l.amt * r : null;
     return `<tr data-row="${i}">
       <td class="noprint grip-cell"><span class="grip" data-grip="${i}" title="Sürükleyerek sırala" aria-label="Sürükle">⋮⋮</span></td>
-      <td><div style="font-weight:600">${esc(l.m)}</div>
+      <td><div style="font-weight:600;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:200px;max-width:320px">${esc(l.m)}</div>
           ${l.cu === 'EUR' ? '<div style="color:var(--mute);font-size:12px">Liste fiyatı EUR</div>' : ''}</td>
       <td class="num"><input class="up" type="number" min="0" step="0.01" data-i="${i}" data-f="up"
           value="${unit == null ? '' : unit.toFixed(2)}" placeholder="Fiyat yok" ${isNaN(r) ? 'disabled' : ''}></td>
       <td class="num"><div class="stepper"><button type="button" class="stp" data-step="-1" data-i="${i}" aria-label="Azalt">−</button><input class="qty" type="number" min="1" step="1" data-i="${i}" data-f="qty" value="${l.qty}"><button type="button" class="stp" data-step="1" data-i="${i}" aria-label="Artır">+</button></div></td>
-      <td class="num">${unit == null || incomplete ? '—' : fmt(unit * l.qty, cur)}</td>
+      <td class="num"><span style="display:inline-block;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff;min-width:110px;text-align:right">${unit == null || incomplete ? '—' : fmt(unit * l.qty, cur)}</span></td>
       <td class="num noprint"><button class="btn del sm" data-rm="${i}">Sil</button></td>
     </tr>`;
   }).join('');
