@@ -49,6 +49,9 @@ input[type=text],input[type=password],input[type=number],input[type=date],select
 input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-offset:0;border-color:transparent}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .grid2>*{min-width:0}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.grid3>*{min-width:0}
+@media (max-width:600px){.grid3{grid-template-columns:1fr}}
 .field input,.field select{height:42px;width:100%;max-width:100%;min-width:0;display:block}
 .field input[type=date]{-webkit-appearance:none;appearance:none;text-align:left;padding:0 11px;font-size:14px;line-height:40px;min-height:42px;display:flex;align-items:center}
 #disc{background:#fbe3e1}
@@ -335,6 +338,8 @@ td input.up{width:110px;text-align:right;padding:6px}
       <div class="grid2">
         <div class="field"><label for="cur">Teklif para birimi</label><select id="cur"><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="TRY">TL (₺)</option></select></div>
         <div class="field"><label for="disc">İskonto (%)</label><input type="number" id="disc" min="0" max="100" step="0.5" value="0"></div>
+      </div>
+      <div class="grid3">
         <div class="field"><label for="rateUsd">USD / TL kuru</label><input type="number" id="rateUsd" min="0" step="0.0001" value="49.84" placeholder="örn. 45,20"></div>
         <div class="field"><label for="rateEur">EUR / TL kuru</label><input type="number" id="rateEur" min="0" step="0.0001" value="55.45" placeholder="örn. 52,10"></div>
         
