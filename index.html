@@ -848,38 +848,78 @@ $('pkgDel').addEventListener('click', () => {
 renderPkgSel();
 if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 
-// Sesle arama ve komutlar (Chrome/Edge, mikrofon izni gerekir).
-// "RB6609" arar, "RB6609 ekle" ekler, "üç tane RB6609 ekle" üç adet ekler, "RB6609 sil" siler, "RB6609 beş yap" adedi değiştirir.
+// Sesli asistan: ürün arama/ekleme, çıkarma, adet değiştirme, sıra numarasıyla işlem, "bir tane daha", toplam okuma, geri alma.
 (function () {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const mic = $('mic');
   if (!SR || !mic) return;
   mic.hidden = false;
-  const NUMW = { sıfır: 0, bir: 1, iki: 2, üç: 3, uç: 3, dört: 4, beş: 5, altı: 6, yedi: 7, sekiz: 8, dokuz: 9, on: 10, yirmi: 20, yüz: 100 };
-  const LETTER = { be: 'b', bi: 'b', bee: 'b', te: 't', ti: 't', de: 'd', di: 'd', ef: 'f', ge: 'g', ce: 'c', ci: 'c', ke: 'k', ka: 'k', el: 'l', em: 'm', en: 'n', pe: 'p', pi: 'p', er: 'r', ar: 'r', es: 's', si: 's', ve: 'v', vi: 'v', ze: 'z', zi: 'z', he: 'h', hi: 'h', ye: 'y', yi: 'y' };
-  const toNum = w => /^\d+$/.test(w) ? Number(w) : (NUMW[w] !== undefined ? NUMW[w] : null);
+  const UNITS = { sıfır: 0, bir: 1, iki: 2, üç: 3, uç: 3, dört: 4, beş: 5, altı: 6, yedi: 7, sekiz: 8, dokuz: 9 };
+  const TENS = { on: 10, yirmi: 20, otuz: 30, kırk: 40, elli: 50, altmış: 60, yetmiş: 70, seksen: 80, doksan: 90 };
+  const ORD = { birinci: 1, ikinci: 2, üçüncü: 3, dördüncü: 4, beşinci: 5, altıncı: 6, yedinci: 7, sekizinci: 8, dokuzuncu: 9, onuncu: 10 };
+  const ADD = ['ekle', 'ekleyin', 'koy', 'koyun', 'al', 'alayım', 'alalım', 'istiyorum', 'lazım'];
+  const DEL = ['sil', 'silin', 'çıkar', 'çıkarın', 'kaldır', 'kaldırın'];
+  const SET = ['yap', 'yapın', 'olsun', 'ayarla', 'değiştir', 'değiştirin'];
+  const INC = ['artır', 'arttır', 'çoğalt'];
+  const DEC = ['azalt', 'eksilt', 'düşür'];
+  const FILL = new Set(['lütfen', 'bana', 'de', 'da', 'tane', 'adet', 'adedi', 'daha', 'ürünü', 'ürün', 'ürünleri', 'şunu', 'şu', 'onu', 'bunu', 've', 'ile', 'olarak', 'kadar', 'için', 'teklife', 'teklifte', 'tekliften', 'teklifimize', 'lazım', 'bir']);
+  const HELP = 'Örnekler: "RB6609 ekle", "üç tane RB6609 ekle", "ikinci ürünü sil", "son ürünü sil", "RB6609 beş yap", "ikinci ürün on olsun", "bir tane daha", "toplam ne", "geri al"';
+  const LETTER = { be: 'b', bi: 'b', bee: 'b', te: 't', ti: 't', de: 'd', di: 'd', ef: 'f', ge: 'g', ce: 'c', ci: 'c', ke: 'k', ka: 'k', el: 'l', em: 'm', en: 'n', pe: 'p', pi: 'p', er: 'r', ar: 'r', es: 's', si: 's', ve: 'v', vi: 'v', ze: 'z', zi: 'z' };
+  const history = [];
   const toCode = text => text.toLocaleLowerCase('tr-TR').split(/\s+/).filter(Boolean).map(w => {
-    const n = toNum(w); if (n !== null) return String(n);
+    if (/^\d+$/.test(w)) return w;
+    if (UNITS[w] !== undefined) return String(UNITS[w]);
     return LETTER[w] !== undefined ? LETTER[w] : w;
   }).join(' ');
-  // Komutu ayrıştırır: fiil (ekle/sil/yap), ürün metni ve varsa adet. Sayı adı ya da kısa rakam adet olabilir;
-  // bu durumda önce tam metnin ürün olup olmadığına bakılır (ör. "RB 6609" bir adet değil, ürün koddur).
+  // Ardışık sayı sözcüklerini okur: "on iki" = 12, "iki yüz" = 200, "yirmi beş" = 25
+  function numRun(toks, i) {
+    let cur = 0, len = 0;
+    for (let j = i; j < toks.length; j++) {
+      const t = toks[j];
+      if (/^\d{1,3}$/.test(t) && len === 0) { cur = Number(t); len++; break; }
+      if (UNITS[t] !== undefined) cur += UNITS[t];
+      else if (TENS[t] !== undefined) cur += TENS[t];
+      else if (t === 'yüz') cur = (cur || 1) * 100;
+      else break;
+      len++;
+    }
+    return len ? { val: cur, len } : null;
+  }
   function parseVoice(heard) {
-    let toks = heard.trim().toLocaleLowerCase('tr-TR').split(/\s+/)
+    const raw = heard.trim().toLocaleLowerCase('tr-TR').split(/\s+/)
       .map(t => t.replace(/[’'].*$/, '').replace(/[.,!?;:]+$/, '')).filter(Boolean);
     let verb = 'ara';
-    const vi = toks.map((t, i) => (t === 'ekle' || t === 'sil' || t === 'yap') ? i : -1).filter(i => i >= 0);
-    if (vi.length) verb = toks[vi[vi.length - 1]];
-    toks = toks.filter(t => t !== 'ekle' && t !== 'sil' && t !== 'yap' && t !== 'tane' && t !== 'adet');
-    const full = toks.join(' ');
+    if (raw.includes('geri') && raw.includes('al')) verb = 'undo';
+    else if (raw.includes('yardım') || raw.includes('yardim')) verb = 'help';
+    else if (raw.includes('toplam') || raw.join(' ').includes('ne kadar')) verb = 'total';
+    else if (raw.includes('temizle') || raw.includes('temizleyin')) verb = 'clear';
+    const found = raw.map(t => (ADD.includes(t) ? 'add' : DEL.includes(t) ? 'del' : SET.includes(t) ? 'set' : INC.includes(t) ? 'inc' : DEC.includes(t) ? 'dec' : null));
+    const vIdx = found.map((v, i) => v ? i : -1).filter(i => i >= 0);
+    if (verb === 'ara' && vIdx.length) verb = found[vIdx[vIdx.length - 1]];
+    // Sıra numarası: "ikinci ürün", "3 ürünü", "son ürün"
+    let pos = null;
+    const keep = [];
+    for (let i = 0; i < raw.length; i++) {
+      const t = raw[i];
+      if (found[i] || t === 'geri' || t === 'yardım' || t === 'toplam' || t === 'temizle' || t === 'temizleyin') continue;
+      if (ORD[t] !== undefined && pos === null) { pos = ORD[t]; continue; }
+      if (t === 'son' && pos === null) { pos = -1; continue; }
+      if (/^\d{1,2}$/.test(t) && raw[i + 1] && raw[i + 1].startsWith('ürün') && pos === null) { pos = Number(t); continue; }
+      keep.push(t);
+    }
+    // Adet: sayı sözcüğü veya rakam (ürün kodunun parçası değilse)
+    const full = keep.filter(t => !FILL.has(t)).join(' ');
     let qty = null;
-    const wi = toks.findIndex(t => NUMW[t] !== undefined);
-    if (wi >= 0) qty = { num: NUMW[toks[wi]], rest: toks.filter((_, i) => i !== wi).join(' ') };
-    else if (toks.length > 1 && /^\d{1,2}$/.test(toks[0]) && !/^\d/.test(toks[1])) qty = { num: Number(toks[0]), rest: toks.slice(1).join(' ') };
-    else if (toks.length > 1 && /^\d{1,2}$/.test(toks[toks.length - 1]) && !/^\d/.test(toks[toks.length - 2])) qty = { num: Number(toks[toks.length - 1]), rest: toks.slice(0, -1).join(' ') };
-    return { verb, full, qty, num: null };
+    for (let i = 0; i < keep.length; i++) {
+      const r = numRun(keep, i);
+      if (r) { qty = r.val; keep.splice(i, r.len); break; }
+    }
+    const rest = keep.filter(t => !FILL.has(t)).join(' ');
+    if (verb === 'ara' && !vIdx.length && pos === null && raw.includes('daha')) { verb = 'inc'; qty = qty || 1; }
+    const fullAll = raw.filter(t => !found[raw.indexOf(t)] && t !== 'geri' && t !== 'yardım' && t !== 'toplam' && !FILL.has(t) && !ORD[t] && t !== 'son').join(' ');
+    return { verb, pos, qty, full, rest, fullAll };
   }
-  // Tam eşleşme arar (yazım toleranslı değil); yanlış ürün eklememek için
+  // Tam eşleşme arar; yanlış ürün eklememek için
   function exactFind(text) {
     if (!text) return null;
     const n = v => v.toLocaleLowerCase('tr-TR').replace(/[^\p{L}\p{N}]+/gu, '');
@@ -888,11 +928,63 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
     const keys = [n(text), n(toCode(text))];
     return keys.includes(n(p.m)) || keys.includes(n(p.s)) ? p : null;
   }
-  // Arama kutusuna yazıp ilk sonucu döndürür; önce söylenen metin, olmazsa harf/sayılara çevrilmiş hali denenir
   function findTop(text) {
     const tryText = v => { $('q').value = v; resetList(); const first = document.querySelector('#plist [data-add]'); return first ? PRODUCTS.find(x => x.s === first.dataset.add) : null; };
     if (!text) return null;
     return tryText(text) || (toCode(text) !== text ? tryText(toCode(text)) : null);
+  }
+  function snapshot() { history.push(JSON.parse(JSON.stringify(state.lines))); if (history.length > 20) history.shift(); }
+  function say(msg, speak) {
+    $('cnt').textContent = msg;
+    if (!speak) return;
+    try { if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(msg); u.lang = 'tr-TR'; speechSynthesis.cancel(); speechSynthesis.speak(u); } } catch (e) {}
+  }
+  function totalText() {
+    const el = [...document.querySelectorAll('#quote *')].find(e => e.children.length === 0 && e.textContent.trim() === 'Genel toplam');
+    const v = el && el.parentElement && el.parentElement.lastElementChild ? el.parentElement.lastElementChild.textContent.trim() : '';
+    return v;
+  }
+  function changeLine(l, fn, label) {
+    snapshot(); fn(); persist(); renderQuote(); renderList();
+    say(label, false);
+  }
+  function applyTo(p, cmd) {
+    const find = () => state.lines.find(x => x.s === p.s);
+    if (cmd.verb === 'add') {
+      snapshot(); addQty(p.s, cmd.qty || 1); persist(); renderQuote(); renderList();
+      const b = document.querySelector('#plist [data-add="' + p.s + '"]'); if (b) flashBtn(b);
+      return say(p.m + ' teklife eklendi' + (cmd.qty > 1 ? ' (' + cmd.qty + ' adet)' : ''), false);
+    }
+    if (cmd.verb === 'del') {
+      if (!find()) return say('Teklifte yok: ' + p.m, true);
+      changeLine(null, () => { state.lines = state.lines.filter(l => l.s !== p.s); }, p.m + ' tekliften silindi');
+      return;
+    }
+    if (cmd.verb === 'set') {
+      const l = find(); if (!l) return say('Teklifte yok: ' + p.m, true);
+      if (!cmd.qty) return say('Adedi söyleyin, örnek: ' + p.m + ' beş yap', true);
+      changeLine(l, () => { l.qty = Math.max(1, cmd.qty); }, p.m + ' adedi ' + l.qty + ' yapıldı');
+      return;
+    }
+    if (cmd.verb === 'inc' || cmd.verb === 'dec') {
+      const l = find();
+      const step = cmd.qty || 1;
+      if (!l) { if (cmd.verb === 'inc') { snapshot(); addQty(p.s, step); persist(); renderQuote(); renderList(); return say(p.m + ' teklife eklendi', false); } return say('Teklifte yok: ' + p.m, true); }
+      changeLine(l, () => { l.qty = Math.max(1, l.qty + (cmd.verb === 'inc' ? step : -step)); }, p.m + ' adedi ' + l.qty + ' oldu');
+      return;
+    }
+    say(p.m + ' için sonuçlar listelendi', false);
+  }
+  function applyPos(cmd) {
+    const idx = cmd.pos === -1 ? state.lines.length - 1 : cmd.pos - 1;
+    const l = state.lines[idx];
+    if (!l) return say('Teklifte bu sırada ürün yok', true);
+    const name = l.m || l.s;
+    if (cmd.verb === 'del') return changeLine(l, () => { state.lines.splice(idx, 1); }, name + ' tekliften silindi');
+    if (cmd.verb === 'set' && cmd.qty) return changeLine(l, () => { l.qty = Math.max(1, cmd.qty); }, name + ' adedi ' + l.qty + ' yapıldı');
+    if (cmd.verb === 'inc') return changeLine(l, () => { l.qty += cmd.qty || 1; }, name + ' adedi ' + l.qty + ' oldu');
+    if (cmd.verb === 'dec') return changeLine(l, () => { l.qty = Math.max(1, l.qty - (cmd.qty || 1)); }, name + ' adedi ' + l.qty + ' oldu');
+    return say(name + ' · ' + (cmd.verb === 'set' ? 'adedi söyleyin' : 'işlem seçin'), true);
   }
   mic.addEventListener('click', () => {
     const rec = new SR();
@@ -904,34 +996,26 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.
       mic.textContent = 'Sesle';
       const heard = (e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '').trim();
       const cmd = parseVoice(heard);
+      if (cmd.verb === 'undo') {
+        if (!history.length) return say('Geri alınacak işlem yok', true);
+        state.lines = history.pop(); persist(); renderQuote(); renderList();
+        return say('Son işlem geri alındı', false);
+      }
+      if (cmd.verb === 'help') return say(HELP, false);
+      if (cmd.verb === 'total') { const t = totalText(); return say(t ? 'Genel toplam ' + t : 'Teklif boş', true); }
+      if (cmd.verb === 'clear') return say('Teklifi temizlemek için Temizle düğmesine basın', false);
+      if (cmd.verb === 'inc' && !cmd.full && !cmd.rest && cmd.pos === null) cmd.pos = -1;
+      if (cmd.pos !== null) return applyPos(cmd);
       let p = null;
-      if (cmd.qty) { p = exactFind(cmd.full); if (!p) { p = findTop(cmd.qty.rest); cmd.num = cmd.qty.num; } }
-      else { p = findTop(cmd.full); }
-      if (!p) { $('cnt').textContent = 'Duyulan: "' + heard + '" · ürün bulunamadı'; return; }
-      if (cmd.verb === 'ara') { $('cnt').textContent = p.m + ' için sonuçlar'; return; }
-      if (cmd.verb === 'ekle') {
-        addQty(p.s, cmd.num || 1);
-        $('cnt').textContent = p.m + ' teklife eklendi' + (cmd.num > 1 ? ' (' + cmd.num + ' adet)' : '');
-        const b = document.querySelector('#plist [data-add="' + p.s + '"]'); if (b) flashBtn(b);
-        return;
+      if (cmd.qty !== null && cmd.verb !== 'ara') {
+        p = exactFind(cmd.fullAll);
+        if (p) cmd.qty = null; else p = exactFind(cmd.full) || exactFind(cmd.rest);
       }
-      if (cmd.verb === 'sil') {
-        const before = state.lines.length;
-        state.lines = state.lines.filter(l => l.s !== p.s);
-        if (state.lines.length === before) { $('cnt').textContent = 'Teklifte yok: ' + p.m; return; }
-        persist(); renderQuote();
-        $('cnt').textContent = p.m + ' tekliften silindi';
-        return;
-      }
-      if (cmd.verb === 'yap') {
-        const l = state.lines.find(x => x.s === p.s);
-        if (!l) { $('cnt').textContent = 'Teklifte yok: ' + p.m; return; }
-        if (!cmd.num) { $('cnt').textContent = 'Adedi söyleyin, örnek: ' + p.m + ' beş yap'; return; }
-        l.qty = Math.max(1, cmd.num); persist(); renderQuote();
-        $('cnt').textContent = p.m + ' adedi ' + l.qty + ' yapıldı';
-      }
+      else p = findTop(cmd.full) || findTop(cmd.rest);
+      if (!p) return say('Duyulan: "' + heard + '" · ürün bulunamadı', cmd.verb !== 'ara');
+      applyTo(p, cmd);
     };
-    rec.onerror = () => { mic.textContent = 'Sesle'; $('cnt').textContent = 'Ses tanınamadı, tekrar deneyin'; };
+    rec.onerror = () => { mic.textContent = 'Sesle'; say('Ses tanınamadı, tekrar deneyin', false); };
     rec.onend = () => { mic.textContent = 'Sesle'; };
     try { rec.start(); } catch (err) { mic.textContent = 'Sesle'; }
   });
