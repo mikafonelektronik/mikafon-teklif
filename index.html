@@ -233,7 +233,7 @@ td input.up{width:110px;text-align:right;padding:6px}
       <button type="button" id="mic" class="btn ghost sm" aria-label="Sesle ara veya ekle" title="Sesle ara. Sonuna 'ekle' deyince ilk ürünü teklife ekler" hidden>Sesle</button>
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
-      <button type="button" id="favTab" class="btn ghost sm" aria-pressed="false">★ Favoriler</button>
+      <span class="favtabs" id="favTabs"></span><button type="button" id="favNew" class="btn ghost sm">+ Favori listesi</button><button type="button" id="favDel" class="btn ghost sm">Listeyi sil</button>
     </div>
     <details class="tools" id="tools">
       <summary>Toplu ekle, paketler</summary>
@@ -599,16 +599,38 @@ $('brand').addEventListener('change', resetList);
 function flashBtn(b) { b.textContent = 'Eklendi ✓'; b.style.background = '#1f8a4c'; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = 'Ekle'; b.style.background = ''; }, 1400); }
 $('plist').addEventListener('click', e => {
   if (e.target.closest('[data-more]')) { listLimit += 80; renderList(); return; }
-  const fv = e.target.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); renderList(); return; }
+  const fv = e.target.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); renderFavTabs(); renderList(); return; }
   const sg = e.target.closest('[data-sugg]'); if (sg) { $('q').value = sg.dataset.sugg; resetList(); return; }
   const b = e.target.closest('[data-add]'); if (b) { addLine(b.dataset.add); flashBtn(b); }
 });
 // Yardımcılar: favoriler, paketler, toplu ekleme (alt işlevler üst düzeyde, sesli komutlar da kullanır)
-function readFavList() { try { const a = JSON.parse(localStorage.getItem('mikafon-favoriler') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+// Favori listeleri: [{name, codes}], seçili liste favActive. Eski tek liste biçimi otomatik taşınır.
+var favActive = 0;
+function readFavLists() {
+  let a = [];
+  try { a = JSON.parse(localStorage.getItem('mikafon-favoriler') || '[]'); } catch (e) { a = []; }
+  if (!Array.isArray(a)) a = [];
+  if (a.length && typeof a[0] === 'string') a = [{ name: 'Favori 1', codes: a }];
+  return a.filter(x => x && typeof x.name === 'string' && Array.isArray(x.codes));
+}
+function writeFavLists(a) { try { localStorage.setItem('mikafon-favoriler', JSON.stringify(a)); } catch (e) {} }
+function readFavList() { // seçili listenin stok kodları (yıldız ve filtre bunu kullanır)
+  const a = readFavLists(); const l = a[favActive];
+  return l ? l.codes : [];
+}
 function toggleFav(code) {
-  let a = readFavList();
-  a = a.includes(code) ? a.filter(x => x !== code) : a.concat(code);
-  try { localStorage.setItem('mikafon-favoriler', JSON.stringify(a)); } catch (e) {}
+  const a = readFavLists();
+  if (!a.length) a.push({ name: 'Favori 1', codes: [] });
+  if (favActive >= a.length) favActive = a.length - 1;
+  const l = a[favActive];
+  l.codes = l.codes.includes(code) ? l.codes.filter(x => x !== code) : l.codes.concat(code);
+  writeFavLists(a);
+}
+function renderFavTabs() {
+  const a = readFavLists();
+  if (favActive >= a.length) favActive = Math.max(0, a.length - 1);
+  $('favTabs').innerHTML = a.map((l, i) => '<button type="button" class="btn sm' + (favOnly && i === favActive ? '' : ' ghost') + '" data-fav-tab="' + i + '" aria-pressed="' + (favOnly && i === favActive) + '">★ ' + esc(l.name) + ' <span>' + l.codes.length + '</span></button>').join('');
+  $('favDel').hidden = !a.length;
 }
 function readPkgs() { try { const a = JSON.parse(localStorage.getItem('mikafon-paketler') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function writePkgs(a) { try { localStorage.setItem('mikafon-paketler', JSON.stringify(a)); return true; } catch (e) { return false; } }
@@ -1080,13 +1102,32 @@ $('shareBtn').addEventListener('click', async () => {
     $('msg').textContent = 'Paylaşım hazırlanamadı: ' + (e && e.message ? e.message : 'bilinmeyen hata');
   } finally { btn.disabled = false; btn.textContent = old; }
 });
-$('favTab').addEventListener('click', () => {
-  favOnly = !favOnly;
-  const b = $('favTab');
-  b.setAttribute('aria-pressed', String(favOnly));
-  b.className = favOnly ? 'btn sm' : 'btn ghost sm';
-  resetList();
+$('favTabs').addEventListener('click', e => {
+  const t = e.target.closest('[data-fav-tab]'); if (!t) return;
+  const i = Number(t.dataset.favTab);
+  favOnly = !(favOnly && favActive === i);
+  favActive = i;
+  renderFavTabs(); resetList();
 });
+$('favNew').addEventListener('click', () => {
+  const a = readFavLists();
+  a.push({ name: 'Favori ' + (a.length + 1), codes: [] });
+  writeFavLists(a);
+  favActive = a.length - 1; favOnly = false;
+  renderFavTabs(); resetList();
+  $('cnt').textContent = '"' + a[favActive].name + '" oluşturuldu. Ürünlerin ☆ düğmesine basarak ekleyin';
+});
+$('favDel').addEventListener('click', () => {
+  const a = readFavLists();
+  if (!a[favActive]) return;
+  const name = a[favActive].name;
+  a.splice(favActive, 1);
+  writeFavLists(a);
+  favActive = 0; favOnly = false;
+  renderFavTabs(); resetList();
+  $('cnt').textContent = '"' + name + '" listesi silindi';
+});
+renderFavTabs();
 $('brandHome').addEventListener('click', e => { e.preventDefault(); location.reload(); });
 $('jpegClose').addEventListener('click', () => { $('jpegBox').hidden = true; });
 $('save').addEventListener('click', () => { const ok = persist() && saveQuote(); renderSaved(); $('saved').textContent = ok ? 'Taslak bu tarayıcıda kaydedildi.' : 'Taslak kaydedilemedi: tarayıcı depolaması kapalı olabilir.'; setTimeout(() => $('saved').textContent = '', 3000); });
