@@ -569,15 +569,8 @@ function restore() {
   } catch (e) {}
 }
 function newQuoteNo() {
-  const yr = new Date().getFullYear();
-  const seller = (($('seller') && $('seller').value) || '').trim();
-  const code = seller.split(/\s+/).map(w => (w[0] || '')).join('').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'MK';
-  const prefix = 'MK-' + yr + '-' + code + '-';
-  let max = 0;
-  readList().map(x => x.qno || '').concat([$('qno') ? $('qno').value : '']).forEach(q => {
-    if (q.startsWith(prefix)) { const n = parseInt(q.slice(prefix.length), 10); if (n > max) max = n; }
-  });
-  return prefix + String(max + 1).padStart(3, '0');
+  const d = new Date();
+  return 'MKF-' + todayISO().replace(/-/g, '') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0');
 }
 // Aynı teklif numarası ikinci kez kullanılırsa uyarı verir
 function checkQnoDup() {
