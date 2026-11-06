@@ -100,6 +100,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .favbar label{white-space:nowrap}
 .favbar>.favtabs:empty{display:none}
 @media (max-width:900px){.toolbar{grid-template-columns:minmax(0,1fr)}.toolbar>*{grid-column:1/-1!important}.favbar{flex-wrap:wrap}}
+@media (max-width:900px){#mic{order:-1;background:var(--cyan);border-color:var(--cyan);color:var(--navy)}}
 .toolbar.actbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .toolbar.actbar>.btn{width:100%;height:40px;box-sizing:border-box;padding:0 8px;border-radius:12px;margin:0;grid-column:auto;white-space:nowrap}
 @media (max-width:600px){.toolbar.actbar{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar.actbar>.btn{grid-column:auto!important}}
