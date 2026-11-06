@@ -767,7 +767,7 @@ function readFavLists() {
   let a = [];
   try { a = JSON.parse(localStorage.getItem('mikafon-favoriler') || '[]'); } catch (e) { a = []; }
   if (!Array.isArray(a)) a = [];
-  if (a.length && typeof a[0] === 'string') a = [{ name: 'Paket 1', codes: a }];
+  if (a.length && typeof a[0] === 'string') a = [];
   return a.filter(x => x && typeof x.name === 'string' && Array.isArray(x.codes));
 }
 function writeFavLists(a) { try { localStorage.setItem('mikafon-favoriler', JSON.stringify(a)); } catch (e) {} }
