@@ -85,6 +85,16 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 #favDel.armed{background:#b42318;color:#fff;border-color:#b42318}
 #favInfo{flex-basis:100%;font-size:12px}
 .pkg-lbl{font-weight:700;font-size:14px}
+/* Ürün ekle alanı: her öğe altalta */
+.toolbar:not(.actbar){grid-template-columns:minmax(0,1fr)!important}
+.toolbar:not(.actbar)>*{grid-column:1/-1!important;min-width:0}
+.favbar{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.favbar>.pkg-lbl{align-self:flex-start}
+.favbar>select{width:100%;flex:none}
+.favnewbox[hidden]{display:none!important}
+.favbar>.btn{align-self:flex-start}
+.favbar #favAll{align-self:stretch}
+.favbar #favAll,.favbar #favDel{width:auto}
 @media (max-width:900px){.favbar{gap:8px}.favnewbox{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:6px;width:100%}.favnewbox input{width:100%!important;min-width:0;max-width:none;box-sizing:border-box}
 #favNewOk{flex:0 0 auto;width:auto;min-width:0;padding:0 14px;white-space:nowrap}.favbar>select{flex:1 1 100%;width:100%}.favbar .btn{flex:0 0 auto}}
 .favbar label{white-space:nowrap}
@@ -359,21 +369,16 @@ body.rowdrag,body.rowdrag *{-webkit-user-select:none!important;user-select:none!
 
 <main class="layout" data-view="list">
   <section class="card noprint col-list" aria-label="Ürün listesi">
-    <h2>Ürün ekle</h2>
     <div class="toolbar">
       <input type="search" id="q" enterkeyhint="search" autocomplete="off" placeholder="Model, stok kodu veya ürün adı ara">
       <button type="button" id="mic" class="btn ghost sm" aria-label="Sesle ara veya ekle" title="Sesle ara. Sonuna 'ekle' deyince ilk ürünü teklife ekler" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Sesle</button>
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
-      <div class="favbar" id="pkgBar"><label for="favSel" class="pkg-lbl">Paketim:</label><select id="favSel" aria-label="Paketim"></select><span id="favNewBox" class="favnewbox" hidden><input type="text" id="favName" placeholder="Paket adı" maxlength="40" aria-label="Paket adı"><button type="button" id="favNewOk" class="btn sm">Oluştur</button></span><button type="button" id="favDel" class="btn del sm">Paketi sil</button><button type="button" id="favAll" class="btn sm">Teklife aktar</button></div>
+      <details class="tools pkgtools" id="pkgTools"><summary><span class="sum-t">Paketim</span><span class="sum-sep">·</span><span class="sum-t" id="pkgSum">Henüz paket yok</span><span class="sum-chev" aria-hidden="true">▾</span></summary><div class="tools-b favbar" id="pkgBar"><select id="favSel" aria-label="Paketim"></select><span id="favNewBox" class="favnewbox" hidden><input type="text" id="favName" placeholder="Paket adı" maxlength="40" aria-label="Paket adı"><button type="button" id="favNewOk" class="btn sm">Oluştur</button></span><button type="button" id="favDel" class="btn del sm">Paketi sil</button><button type="button" id="favAll" class="btn sm">Teklife aktar</button></div></details>
     </div>
     <details class="tools" id="tools">
-      <summary><span class="sum-t">Toplu ekle</span><span class="sum-chev" aria-hidden="true">▾</span></summary>
+      <summary><span class="sum-t">Katalog kontrolü</span><span class="sum-chev" aria-hidden="true">▾</span></summary>
       <div class="tools-b">
-        <div class="bulk-help"><label for="bulk">Her satıra stok kodu veya model ile adedi yazın.</label><span class="bulk-ex">Örnek: LIVE 14 3</span><span class="bulk-ex">Excel'den iki sütunu kopyalayıp yapıştırabilirsiniz.</span></div>
-        <textarea id="bulk" class="bulk-area" rows="4" placeholder="LIVE 14 3&#10;DA200 1"></textarea>
-        <button type="button" class="btn sm bulk-go" id="bulkAdd">Teklife ekle</button>
-        <div class="tools-h">Katalog kontrolü</div>
         <button type="button" class="btn ghost sm" id="catCheck">Kontrol et</button>
         <div class="mute" id="catOut" style="width:100%"></div>
       </div>
@@ -745,7 +750,7 @@ $('brand').addEventListener('change', resetList);
 function flashBtn(b) { b.classList.add('on'); const pth = b.querySelector('path'); if (pth) pth.setAttribute('d', 'M5 12.5l4.5 4.5L19 7.5'); }
 $('plist').addEventListener('click', e => {
   if (e.target.closest('[data-more]')) { listLimit += 80; renderList(); return; }
-  const fv = e.target.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); renderFavTabs(); renderList(); return; }
+  const fv = e.target.closest('[data-fav]'); if (fv) { const had = readFavLists().length; toggleFav(fv.dataset.fav); renderFavTabs(); renderList(); if (!had) $('cnt').textContent = 'Önce + Yeni paket oluşturun, sonra ürünü ekleyin'; return; }
   const sg = e.target.closest('[data-sugg]'); if (sg) { $('q').value = sg.dataset.sugg; resetList(); return; }
   const b = e.target.closest('[data-add]');
   if (b) {
@@ -762,7 +767,7 @@ function readFavLists() {
   let a = [];
   try { a = JSON.parse(localStorage.getItem('mikafon-favoriler') || '[]'); } catch (e) { a = []; }
   if (!Array.isArray(a)) a = [];
-  if (a.length && typeof a[0] === 'string') a = [{ name: 'Favori 1', codes: a }];
+  if (a.length && typeof a[0] === 'string') a = [{ name: 'Paket 1', codes: a }];
   return a.filter(x => x && typeof x.name === 'string' && Array.isArray(x.codes));
 }
 function writeFavLists(a) { try { localStorage.setItem('mikafon-favoriler', JSON.stringify(a)); } catch (e) {} }
@@ -772,7 +777,7 @@ function readFavList() { // seçili listenin stok kodları (yıldız ve filtre b
 }
 function toggleFav(code) {
   const a = readFavLists();
-  if (!a.length) a.push({ name: 'Favori 1', codes: [] });
+  if (!a.length) { $('cnt').textContent = 'Önce + Yeni paket oluşturun, sonra ürünü ekleyin'; return; }
   if (favActive >= a.length) favActive = a.length - 1;
   const l = a[favActive];
   l.codes = l.codes.includes(code) ? l.codes.filter(x => x !== code) : l.codes.concat(code);
@@ -786,6 +791,8 @@ function renderFavTabs() {
     : '<option value="" disabled selected>Henüz paket yok</option>') + '<option value="__new__">+ Yeni paket oluştur</option>';
   $('favAll').disabled = !a.length;
   $('favDel').hidden = !a.length;
+  const cur0 = a[favActive];
+  $('pkgSum').textContent = cur0 ? cur0.name + ' (' + cur0.codes.length + ' ürün)' : 'Henüz paket yok';
 }
 function readPkgs() { try { const a = JSON.parse(localStorage.getItem('mikafon-paketler') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function writePkgs(a) { try { localStorage.setItem('mikafon-paketler', JSON.stringify(a)); return true; } catch (e) { return false; } }
@@ -817,12 +824,6 @@ function parseBulk(text) {
   });
   return { out, missing };
 }
-$('bulkAdd').addEventListener('click', () => {
-  const r = parseBulk($('bulk').value);
-  r.out.forEach(x => addQty(x.p.s, x.qty));
-  if (r.out.length) $('bulk').value = '';
-  $('cnt').textContent = r.out.length + ' satır teklife eklendi' + (r.missing.length ? ' · bulunamayan: ' + r.missing.join(', ') : '');
-});
 // Paketler tek sistem: mikafon-favoriler. Eski "Teklifi paket olarak kaydet" kayıtları bir kez buraya taşınır (adetler taşınmaz).
 (function migratePkgs() {
   try {
