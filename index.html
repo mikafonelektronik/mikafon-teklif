@@ -100,7 +100,6 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .favbar label{white-space:nowrap}
 .favbar>.favtabs:empty{display:none}
 @media (max-width:900px){.toolbar{grid-template-columns:minmax(0,1fr)}.toolbar>*{grid-column:1/-1!important}.favbar{flex-wrap:wrap}}
-@media (max-width:900px){#mic{order:-1;background:var(--cyan);border-color:var(--cyan);color:var(--navy)}}
 .toolbar.actbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .toolbar.actbar>.btn{width:100%;height:40px;box-sizing:border-box;padding:0 8px;border-radius:12px;margin:0;grid-column:auto;white-space:nowrap}
 @media (max-width:600px){.toolbar.actbar{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar.actbar>.btn{grid-column:auto!important}}
@@ -372,7 +371,6 @@ body.rowdrag,body.rowdrag *{-webkit-user-select:none!important;user-select:none!
   <section class="card noprint col-list" aria-label="Ürün listesi">
     <div class="toolbar">
       <input type="search" id="q" enterkeyhint="search" autocomplete="off" placeholder="Model, stok kodu veya ürün adı ara">
-      <button type="button" id="mic" class="btn ghost sm" aria-label="Sesle ara veya ekle" title="Sesle ara. Sonuna 'ekle' deyince ilk ürünü teklife ekler" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Sesle</button>
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
       <details class="tools pkgtools" id="pkgTools"><summary><span class="sum-t">Paketim</span><span class="sum-sep">·</span><span class="sum-t" id="pkgSum">Henüz paket yok</span><span class="sum-chev" aria-hidden="true">▾</span></summary><div class="tools-b favbar" id="pkgBar"><select id="favSel" aria-label="Paketim"></select><span id="favNewBox" class="favnewbox" hidden><input type="text" id="favName" placeholder="Paket adı" maxlength="40" aria-label="Paket adı"><button type="button" id="favNewOk" class="btn sm">Oluştur</button></span><button type="button" id="favDel" class="btn del sm">Paketi sil</button><button type="button" id="favAll" class="btn sm">Teklife aktar</button></div></details>
