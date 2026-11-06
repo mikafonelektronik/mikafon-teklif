@@ -768,10 +768,7 @@ function readFavLists() {
   try { a = JSON.parse(localStorage.getItem('mikafon-favoriler') || '[]'); } catch (e) { a = []; }
   if (!Array.isArray(a)) a = [];
   if (a.length && typeof a[0] === 'string') a = [{ name: 'Paket 1', codes: a }];
-  a = a.filter(x => x && typeof x.name === 'string' && Array.isArray(x.codes));
-  // Eski sürümden kalan "Favori 1" adlarını "Paket 1" yap
-  a.forEach(x => { x.name = x.name.replace(/^Favori\s*/i, 'Paket '); });
-  return a;
+  return a.filter(x => x && typeof x.name === 'string' && Array.isArray(x.codes));
 }
 function writeFavLists(a) { try { localStorage.setItem('mikafon-favoriler', JSON.stringify(a)); } catch (e) {} }
 function readFavList() { // seçili listenin stok kodları (yıldız ve filtre bunu kullanır)
