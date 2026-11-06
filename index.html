@@ -768,7 +768,10 @@ function readFavLists() {
   try { a = JSON.parse(localStorage.getItem('mikafon-favoriler') || '[]'); } catch (e) { a = []; }
   if (!Array.isArray(a)) a = [];
   if (a.length && typeof a[0] === 'string') a = [{ name: 'Paket 1', codes: a }];
-  return a.filter(x => x && typeof x.name === 'string' && Array.isArray(x.codes));
+  a = a.filter(x => x && typeof x.name === 'string' && Array.isArray(x.codes));
+  // Eski sürümden kalan "Favori 1" adlarını "Paket 1" yap
+  a.forEach(x => { x.name = x.name.replace(/^Favori\s*/i, 'Paket '); });
+  return a;
 }
 function writeFavLists(a) { try { localStorage.setItem('mikafon-favoriler', JSON.stringify(a)); } catch (e) {} }
 function readFavList() { // seçili listenin stok kodları (yıldız ve filtre bunu kullanır)
@@ -787,12 +790,12 @@ function renderFavTabs() {
   const a = readFavLists();
   if (favActive >= a.length) favActive = Math.max(0, a.length - 1);
   $('favSel').innerHTML = (a.length
-    ? a.map((l, i) => '<option value="' + i + '"' + (i === favActive ? ' selected' : '') + '>' + esc(l.name) + ' (' + l.codes.length + ' ürün)</option>').join('')
+    ? a.map((l, i) => '<option value="' + i + '"' + (i === favActive ? ' selected' : '') + '>' + esc(l.name) + '</option>').join('')
     : '<option value="" disabled selected>Henüz paket yok</option>') + '<option value="__new__">+ Yeni paket oluştur</option>';
   $('favAll').disabled = !a.length;
   $('favDel').hidden = !a.length;
   const cur0 = a[favActive];
-  $('pkgSum').textContent = cur0 ? cur0.name + ' (' + cur0.codes.length + ' ürün)' : 'Henüz paket yok';
+  $('pkgSum').textContent = cur0 ? cur0.name : 'Henüz paket yok';
 }
 function readPkgs() { try { const a = JSON.parse(localStorage.getItem('mikafon-paketler') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function writePkgs(a) { try { localStorage.setItem('mikafon-paketler', JSON.stringify(a)); return true; } catch (e) { return false; } }
