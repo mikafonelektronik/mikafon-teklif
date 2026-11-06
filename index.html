@@ -376,13 +376,6 @@ body.rowdrag,body.rowdrag *{-webkit-user-select:none!important;user-select:none!
       <select id="brand" aria-label="Marka"></select>
       <details class="tools pkgtools" id="pkgTools"><summary><span class="sum-t">Paketim</span><span class="sum-sep">·</span><span class="sum-t" id="pkgSum">Henüz paket yok</span><span class="sum-chev" aria-hidden="true">▾</span></summary><div class="tools-b favbar" id="pkgBar"><select id="favSel" aria-label="Paketim"></select><span id="favNewBox" class="favnewbox" hidden><input type="text" id="favName" placeholder="Paket adı" maxlength="40" aria-label="Paket adı"><button type="button" id="favNewOk" class="btn sm">Oluştur</button></span><button type="button" id="favDel" class="btn del sm">Paketi sil</button><button type="button" id="favAll" class="btn sm">Teklife aktar</button></div></details>
     </div>
-    <details class="tools" id="tools">
-      <summary><span class="sum-t">Katalog kontrolü</span><span class="sum-chev" aria-hidden="true">▾</span></summary>
-      <div class="tools-b">
-        <button type="button" class="btn ghost sm" id="catCheck">Kontrol et</button>
-        <div class="mute" id="catOut" style="width:100%"></div>
-      </div>
-    </details>
     <div class="note" id="cnt" style="margin-bottom:8px"></div>
     <div class="plist" id="plist"></div>
   </section>
@@ -1430,9 +1423,11 @@ $('favAll').addEventListener('click', () => {
   const a = readFavLists(), l = a[favActive];
   if (!l) { $('cnt').textContent = 'Önce bir paket oluşturun'; return; }
   if (!l.codes.length) { $('cnt').textContent = '"' + l.name + '" paketinde ürün yok. Ürünlerin ☆ düğmesine basarak ekleyin'; return; }
+  state.lines = [];
+  persist();
   let added = 0;
   l.codes.forEach(code => { if (addQty(code, 1)) added++; });
-  $('cnt').textContent = '"' + l.name + '" paketinden ' + added + ' kalem teklife eklendi';
+  $('cnt').textContent = '"' + l.name + '" paketinden ' + added + ' kalem teklife eklendi (önceki ürünler silindi)';
 });
 $('favSel').addEventListener('change', () => {
   disarmDel();
@@ -1485,29 +1480,6 @@ $('custHist').addEventListener('click', e => {
   $('saved').textContent = 'Teklif açıldı: ' + x.qno; setTimeout(() => $('saved').textContent = '', 3000);
 });
 $('qno').addEventListener('input', checkQnoDup);
-// Katalog sağlık kontrolü: fiyatı olmayan, görseli olmayan, aynı stok kodu iki kez geçen ürünler
-function catalogIssues() {
-  const noPrice = PRODUCTS.filter(p => p.amt == null);
-  const noImg = PRODUCTS.filter(p => !p.img);
-  const seen = {}, dupCodes = [];
-  PRODUCTS.forEach(p => { if (!p.s) return; seen[p.s] = (seen[p.s] || []).concat(p); });
-  Object.keys(seen).forEach(k => { if (seen[k].length > 1) dupCodes.push({ code: k, items: seen[k] }); });
-  return { noPrice, noImg, dupCodes };
-}
-function renderCatalogIssues() {
-  const r = catalogIssues();
-  const link = p => '<button type="button" class="btn ghost sm" data-cat="' + esc(p.s || p.m) + '">' + esc(p.m) + (p.s ? ' (' + esc(p.s) + ')' : '') + '</button>';
-  let h = '';
-  h += '<div><b>Fiyatı eksik (' + r.noPrice.length + ')</b><br>' + (r.noPrice.map(link).join(' ') || 'Yok') + '</div>';
-  h += '<div style="margin-top:6px"><b>Görseli olmayan (' + r.noImg.length + ')</b><br>' + (r.noImg.slice(0, 40).map(link).join(' ') || 'Yok') + (r.noImg.length > 40 ? ' …' : '') + '</div>';
-  h += '<div style="margin-top:6px"><b>Aynı stok kodu iki kez (' + r.dupCodes.length + ')</b><br>' + (r.dupCodes.map(d => d.items.map(link).join(' ')).join('<br>') || 'Yok') + '</div>';
-  $('catOut').innerHTML = h;
-}
-$('catCheck').addEventListener('click', renderCatalogIssues);
-$('catOut').addEventListener('click', e => {
-  const b = e.target.closest('[data-cat]'); if (!b) return;
-  $('q').value = b.dataset.cat; resetList();
-});
 $('brandHome').addEventListener('click', e => { e.preventDefault(); location.reload(); });
 $('jpegClose').addEventListener('click', () => { $('jpegBox').hidden = true; });
 $('save').addEventListener('click', () => { const ok = persist() && saveQuote(); renderSaved(); $('saved').textContent = ok ? 'Taslak bu tarayıcıda kaydedildi.' : 'Taslak kaydedilemedi: tarayıcı depolaması kapalı olabilir.'; setTimeout(() => $('saved').textContent = '', 3000); });
