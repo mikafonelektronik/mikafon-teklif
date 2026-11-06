@@ -79,7 +79,12 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .favbar{grid-column:2 / 4;margin:0;display:flex;flex-wrap:nowrap;align-items:center;gap:8px;min-width:0}
 .toolbar input,.toolbar select,.toolbar .btn,.favbar select,.favbar .btn{height:40px;box-sizing:border-box;border-radius:12px;margin:0}
 .toolbar .btn{padding:0 14px;white-space:nowrap}
-.favbar select{flex:0 1 180px;min-width:0}
+.favbar select{flex:0 1 220px;min-width:0}
+.favnewbox{display:inline-flex;gap:6px;align-items:center}.favnewbox[hidden]{display:none}
+.favnewbox input{height:40px;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:0 10px;width:180px;font:inherit}
+#favDel.armed{background:#b42318;color:#fff;border-color:#b42318}
+#favInfo{flex-basis:100%;font-size:12px}
+.pkg-lbl{font-weight:700;font-size:14px}
 .favbar label{white-space:nowrap}
 .favbar>.favtabs:empty{display:none}
 @media (max-width:900px){.toolbar{grid-template-columns:minmax(0,1fr)}.toolbar>*{grid-column:1/-1!important}.favbar{flex-wrap:wrap}}
@@ -103,8 +108,9 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cyan);outline-of
 .prod:hover .prow .btn.ghost.sm{border-color:var(--blue);box-shadow:0 3px 10px rgba(10,26,47,.14)}
 .prod:hover .addi{border-color:var(--blue);box-shadow:0 3px 10px rgba(10,26,47,.14)}
 @media (max-width:600px){.prod{grid-template-columns:56px minmax(0,1fr);row-gap:10px}.prod .side{grid-column:1/-1;width:100%;justify-content:space-between}.prod .pr{width:auto;flex:1 1 auto;min-width:0}.prod .prow{flex:none}}
-.prod .prow .btn.ghost.sm.fav-on{background:#f5c518;border-color:#e0a800;color:#fff}
-.prod .prow .btn.ghost.sm.fav-on:hover{border-color:#e0a800;box-shadow:0 3px 10px rgba(224,168,0,.35)}
+.prod .prow [data-fav]{width:40px!important;height:40px!important;min-width:0;padding:0;flex:0 0 40px;display:flex;align-items:center;justify-content:center;background:#e2ab6b;border-color:#c07f3c;box-shadow:0 2px 6px rgba(192,127,60,.35)}
+.prod .prow .btn.ghost.sm.fav-on{background:#e2ab6b;border-color:#1d5fae;box-shadow:inset 0 0 0 2px #1d5fae,0 2px 6px rgba(192,127,60,.35)}
+.prod .prow .btn.ghost.sm.fav-on:hover{border-color:#1d5fae;box-shadow:0 3px 10px rgba(29,95,174,.2)}
 .addi:hover{background:var(--blue);color:#fff}
 .addi.on:hover{background:#2e9e5b;color:#fff;border-color:#2e9e5b}
 .prod .prow .btn.ghost.sm{width:40px;height:40px;border-radius:12px;padding:0;display:flex;align-items:center;justify-content:center;font-size:17px}
@@ -357,20 +363,14 @@ body.rowdrag,body.rowdrag *{-webkit-user-select:none!important;user-select:none!
       <button type="button" id="mic" class="btn ghost sm" aria-label="Sesle ara veya ekle" title="Sesle ara. Sonuna 'ekle' deyince ilk ürünü teklife ekler" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Sesle</button>
       <select id="grp" aria-label="Ürün grubu"></select>
       <select id="brand" aria-label="Marka"></select>
-      <div class="favbar"><span class="favtabs" id="favTabs"></span><button type="button" id="favNew" class="btn ghost sm">+ Paket</button><select id="favSel" aria-label="Ürünü eklenecek paket"></select><button type="button" id="favDel" class="btn ghost sm">Paketi sil</button></div>
+      <div class="favbar" id="pkgBar"><label for="favSel" class="pkg-lbl">Paketim:</label><select id="favSel" aria-label="Paketim"></select><span id="favNewBox" class="favnewbox" hidden><input type="text" id="favName" placeholder="Paket adı" maxlength="40" aria-label="Paket adı"><button type="button" id="favNewOk" class="btn sm">Oluştur</button></span><button type="button" id="favDel" class="btn del sm">Paketi sil</button><button type="button" id="favAll" class="btn sm">Teklife aktar</button></div>
     </div>
     <details class="tools" id="tools">
-      <summary><span class="sum-t">Toplu ekle</span><span class="sum-sep">·</span><span class="sum-t">Paketler</span><span class="sum-chev" aria-hidden="true">▾</span></summary>
+      <summary><span class="sum-t">Toplu ekle</span><span class="sum-chev" aria-hidden="true">▾</span></summary>
       <div class="tools-b">
         <div class="bulk-help"><label for="bulk">Her satıra stok kodu veya model ile adedi yazın.</label><span class="bulk-ex">Örnek: LIVE 14 3</span><span class="bulk-ex">Excel'den iki sütunu kopyalayıp yapıştırabilirsiniz.</span></div>
         <textarea id="bulk" class="bulk-area" rows="4" placeholder="LIVE 14 3&#10;DA200 1"></textarea>
         <button type="button" class="btn sm bulk-go" id="bulkAdd">Teklife ekle</button>
-        <div class="tools-h">Paketler</div>
-        <div class="field"><input type="text" id="pkgName" placeholder="Paket adı"></div>
-        <button type="button" class="btn ghost sm" id="pkgSave">Teklifi paket olarak kaydet</button>
-        <select id="pkgSel" aria-label="Paket"></select>
-        <button type="button" class="btn sm" id="pkgAdd">Paketi ekle</button>
-        <button type="button" class="btn del sm" id="pkgDel">Paketi sil</button>
         <div class="tools-h">Katalog kontrolü</div>
         <button type="button" class="btn ghost sm" id="catCheck">Kontrol et</button>
         <div class="mute" id="catOut" style="width:100%"></div>
@@ -529,7 +529,7 @@ function renderList() {
         <div class="meta">S.N: ${esc(p.s)} · ${esc(p.gt)}</div>
       </div>
       <div class="side">
-        <div class="pr">${price}</div><div class="prow"><button class="btn ghost sm${readFavList().includes(p.s) ? ' fav-on' : ''}" data-fav="${esc(p.s)}" aria-label="Favori" title="Favorilere ekle">${readFavList().includes(p.s) ? '★' : '☆'}</button>
+        <div class="pr">${price}</div><div class="prow"><button class="btn ghost sm${readFavList().includes(p.s) ? ' fav-on' : ''}" data-fav="${esc(p.s)}" aria-label="Pakete ekle" title="Pakete ekle">${readFavList().includes(p.s) ? '<svg viewBox="0 0 100 100" width="30" height="30" aria-hidden="true"><polygon points="50,8 90,30 50,52 10,30" fill="#f6b26b"/><polygon points="10,30 50,52 50,94 10,72" fill="#e58a4b"/><polygon points="50,52 90,30 90,72 50,94" fill="#d4703a"/><polygon points="27,21 40,14 78,36 64,43" fill="#7a3e22"/></svg>' : '<svg viewBox="0 0 360 360" width="30" height="30" aria-hidden="true"><g fill="none" stroke="#7a4420" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="M83 300V72h126c55 0 91 33 91 79 0 31-15 53-44 70l-65 39v40"/><path d="M83 300h108"/><path d="m191 108 58 34-58 34-58-34 58-34Z"/><path d="M133 142v73l58 34 58-34v-73M191 176v73"/></g></svg>'}</button>
         <button class="addi${state.lines.some(l => l.s === p.s) ? ' on' : ''}" data-add="${esc(p.s)}" aria-label="Teklife ekle" title="Teklife ekle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${state.lines.some(l => l.s === p.s) ? '<path d="M5 12.5l4.5 4.5L19 7.5"/>' : '<path d="M12 5v14M5 12h14"/>'}</svg></button></div>
       </div>
     </div>`;
@@ -779,19 +779,14 @@ function toggleFav(code) {
 function renderFavTabs() {
   const a = readFavLists();
   if (favActive >= a.length) favActive = Math.max(0, a.length - 1);
-  $('favTabs').innerHTML = a.map((l, i) => '<button type="button" class="btn sm" data-fav-tab="' + i + '">' + esc(l.name) + ' <span>(' + l.codes.length + ')</span></button>').join('');
-  $('favSel').innerHTML = a.map((l, i) => '<option value="' + i + '"' + (i === favActive ? ' selected' : '') + '>' + esc(l.name) + '</option>').join('');
-  $('favSel').hidden = !a.length;
+  $('favSel').innerHTML = (a.length
+    ? a.map((l, i) => '<option value="' + i + '"' + (i === favActive ? ' selected' : '') + '>' + esc(l.name) + ' (' + l.codes.length + ' ürün)</option>').join('')
+    : '<option value="" disabled selected>Henüz paket yok</option>') + '<option value="__new__">+ Yeni paket oluştur</option>';
+  $('favAll').disabled = !a.length;
   $('favDel').hidden = !a.length;
 }
 function readPkgs() { try { const a = JSON.parse(localStorage.getItem('mikafon-paketler') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function writePkgs(a) { try { localStorage.setItem('mikafon-paketler', JSON.stringify(a)); return true; } catch (e) { return false; } }
-function renderPkgSel() {
-  const a = readPkgs();
-  $('pkgSel').innerHTML = a.length
-    ? a.map((x, i) => '<option value="' + i + '">' + esc(x.name) + ' (' + x.lines.length + ' kalem)</option>').join('')
-    : '<option value="">Kayıtlı paket yok</option>';
-}
 // Ürünü belirtilen adetle teklife ekler (varsa adedi üstüne ekler)
 function addQty(code, qty) {
   const p = PRODUCTS.find(x => x.s === code);
@@ -826,34 +821,19 @@ $('bulkAdd').addEventListener('click', () => {
   if (r.out.length) $('bulk').value = '';
   $('cnt').textContent = r.out.length + ' satır teklife eklendi' + (r.missing.length ? ' · bulunamayan: ' + r.missing.join(', ') : '');
 });
-$('pkgSave').addEventListener('click', () => {
-  if (!state.lines.length) { $('cnt').textContent = 'Paket için teklifte ürün yok'; return; }
-  const a = readPkgs();
-  const name = $('pkgName').value.trim() || ('Paket ' + (a.length + 1));
-  a.push({ name: name, lines: state.lines.map(l => ({ s: l.s, qty: l.qty })) });
-  writePkgs(a);
-  $('pkgName').value = '';
-  renderPkgSel();
-  $('pkgSel').value = String(a.length - 1);
-  $('cnt').textContent = '"' + name + '" paketi kaydedildi';
-});
-$('pkgAdd').addEventListener('click', () => {
-  const a = readPkgs(), i = Number($('pkgSel').value);
-  if (!a[i]) { $('cnt').textContent = 'Önce bir paket seçin'; return; }
-  let added = 0;
-  a[i].lines.forEach(l => { if (addQty(l.s, l.qty)) added++; });
-  $('cnt').textContent = '"' + a[i].name + '" paketinden ' + added + ' kalem eklendi';
-});
-$('pkgDel').addEventListener('click', () => {
-  const a = readPkgs(), i = Number($('pkgSel').value);
-  if (!a[i]) return;
-  const name = a[i].name;
-  a.splice(i, 1);
-  writePkgs(a);
-  renderPkgSel();
-  $('cnt').textContent = '"' + name + '" paketi silindi';
-});
-renderPkgSel();
+// Paketler tek sistem: mikafon-favoriler. Eski "Teklifi paket olarak kaydet" kayıtları bir kez buraya taşınır (adetler taşınmaz).
+(function migratePkgs() {
+  try {
+    if (localStorage.getItem('mikafon-paket-goc-v1')) return;
+    const old = readPkgs();
+    if (old.length) {
+      const a = readFavLists();
+      old.forEach(x => a.push({ name: x.name || 'Paket', codes: (x.lines || []).map(l => l.s) }));
+      writeFavLists(a);
+    }
+    localStorage.setItem('mikafon-paket-goc-v1', '1');
+  } catch (e) {}
+})();
 if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 
 // Sesli asistan v2: birden fazla komut ("RB6609 üç ve DA200 bir ekle"), bağlam ("onu", "ikisini de sil"), yazım hatasında onay, toplu silmede onay.
@@ -1443,26 +1423,40 @@ $('shareBtn').addEventListener('click', async () => {
     $('msg').textContent = 'Paylaşım hazırlanamadı: ' + (e && e.message ? e.message : 'bilinmeyen hata');
   } finally { btn.disabled = false; btn.textContent = old; }
 });
-$('favTabs').addEventListener('click', e => {
-  const t = e.target.closest('[data-fav-tab]'); if (!t) return;
-  const a = readFavLists(), l = a[Number(t.dataset.favTab)];
-  if (!l || !l.codes.length) { $('cnt').textContent = '"' + (l ? l.name : '') + '" paketinde ürün yok. Ürünlerin ☆ düğmesine basarak ekleyin'; return; }
+$('favAll').addEventListener('click', () => {
+  const a = readFavLists(), l = a[favActive];
+  if (!l) { $('cnt').textContent = 'Önce bir paket oluşturun'; return; }
+  if (!l.codes.length) { $('cnt').textContent = '"' + l.name + '" paketinde ürün yok. Ürünlerin ☆ düğmesine basarak ekleyin'; return; }
   let added = 0;
   l.codes.forEach(code => { if (addQty(code, 1)) added++; });
   $('cnt').textContent = '"' + l.name + '" paketinden ' + added + ' kalem teklife eklendi';
 });
-$('favSel').addEventListener('change', () => { favActive = Number($('favSel').value); renderFavTabs(); resetList(); });
-$('favNew').addEventListener('click', () => {
+$('favSel').addEventListener('change', () => {
+  disarmDel();
+  if ($('favSel').value === '__new__') { $('favNewBox').hidden = false; $('favName').value = ''; $('favName').focus(); return; }
+  favActive = Number($('favSel').value); renderFavTabs(); resetList();
+});
+function createPkg() {
   const a = readFavLists();
-  a.push({ name: 'Paket-' + (a.length + 1), codes: [] });
+  const name = $('favName').value.trim();
+  if (!name) { $('cnt').textContent = 'Paket adı yazın'; $('favName').focus(); return; }
+  a.push({ name: name, codes: [] });
   writeFavLists(a);
   favActive = a.length - 1; favOnly = false;
+  $('favNewBox').hidden = true;
   renderFavTabs(); resetList();
-  $('cnt').textContent = '"' + a[favActive].name + '" oluşturuldu. Ürünlerin ☆ düğmesine basarak ekleyin';
-});
+  $('cnt').textContent = '"' + name + '" paketi oluşturuldu. Ürünlerin ☆ düğmesine basarak ekleyin';
+}
+$('favNewOk').addEventListener('click', createPkg);
+$('favName').addEventListener('blur', () => { setTimeout(() => { if (!$('favNewBox').hidden && document.activeElement !== $('favNewOk')) { $('favNewBox').hidden = true; renderFavTabs(); } }, 150); });
+$('favName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); createPkg(); } });
+let delArmed = false, delTimer = null;
+function disarmDel() { delArmed = false; clearTimeout(delTimer); $('favDel').textContent = 'Paketi sil'; $('favDel').classList.remove('armed'); }
 $('favDel').addEventListener('click', () => {
   const a = readFavLists();
   if (!a[favActive]) return;
+  if (!delArmed) { delArmed = true; $('favDel').textContent = 'Emin misiniz? Tekrar basın'; $('favDel').classList.add('armed'); clearTimeout(delTimer); delTimer = setTimeout(disarmDel, 3000); return; }
+  disarmDel();
   const name = a[favActive].name;
   a.splice(favActive, 1);
   writeFavLists(a);
