@@ -1421,6 +1421,78 @@ async function datasheetFiles(codes) {
   }
   return out;
 }
+
+const FOY_TOP = 290, FOY_BOTTOM = 790;
+function foyLayout(n) {
+  const rowH = Math.min(34, (FOY_BOTTOM - FOY_TOP) / Math.max(1, n));
+  const k = Math.min(1, rowH / 34);
+  return { rowH, k };
+}
+function foyRowTop(i, rowH) { return FOY_TOP + i * rowH; }
+async function buildFoyBundle(foys, lineMap, qno) {
+  if (!window.PDFLib || !window.PDFLib.PDFDocument || !window.jspdf || !window.jspdf.jsPDF) return null;
+  const { PDFDocument, PDFName, PDFNull } = window.PDFLib;
+  const srcs = [];
+  for (const f of foys) {
+    const d = await PDFDocument.load(await f.file.arrayBuffer(), { ignoreEncryption: true, updateMetadata: false });
+    srcs.push({ code: f.code, doc: d, n: d.getPageCount() });
+  }
+  if (!srcs.length) return null;
+  const n = srcs.length;
+  const { rowH, k } = foyLayout(n);
+  let next = 2;
+  const starts = srcs.map(s => { const st = next; next += s.n; return st; });
+  const PW = 595.28, PH = 841.89, ML = 56.7, MR = PW - 56.7, CW = MR - ML;
+  const NAVY = [15, 42, 74], BLUE = [29, 95, 174], PALE = [244, 248, 252], INK = [10, 26, 47], MUTE = [91, 107, 127];
+  const cover = new window.jspdf.jsPDF({ unit: 'pt', format: [PW, PH], orientation: 'portrait', compress: true });
+  [400, 500, 600, 700].forEach(w => { cover.addFileToVFS('Poppins' + w + '.ttf', PDF_FONTS[w]); cover.addFont('Poppins' + w + '.ttf', 'Poppins' + w, 'normal'); });
+  cover.setFillColor(...NAVY); cover.rect(-6, -6, PW + 12, 242, 'F');
+  cover.setFillColor(...BLUE); cover.rect(ML, 66, 40, 4, 'F');
+  cover.setFont('Poppins700', 'normal'); cover.setFontSize(26); cover.setTextColor(255, 255, 255);
+  cover.text('ÜRÜN TEKNİK FÖYLERİ', ML, 116);
+  cover.setFont('Poppins400', 'normal'); cover.setFontSize(9); cover.setTextColor(190, 210, 235);
+  cover.text('Bir ürün adına tıklayarak föyünü açabilirsiniz.', ML, 170);
+  cover.setFont('Poppins700', 'normal'); cover.setFontSize(7.5); cover.setTextColor(...BLUE);
+  cover.text('ÜRÜN', ML + 16, 262); cover.text('KATEGORİ', ML + 150, 262); cover.text('STOK KODU', ML + 300, 262);
+  cover.text('SAYFA', MR - 39, 262, { align: 'center' });
+  for (let i = 0; i < n; i++) {
+    const top = foyRowTop(i, rowH); const line = lineMap[srcs[i].code] || {};
+    const pillH = Math.min(18, rowH - 8), pillW = 46 * k + 4;
+    const bgH = rowH - 4;
+    if (i % 2 === 0) { cover.setFillColor(...PALE); cover.roundedRect(ML, top, CW, bgH, 5, 5, 'F'); }
+    const base = top + bgH / 2 + 3.6 * Math.max(k, 0.7);
+    cover.setFont('Poppins700', 'normal'); cover.setFontSize(10.5 * k); cover.setTextColor(...INK);
+    cover.text(String(line.m || srcs[i].code), ML + 16, base);
+    cover.setFont('Poppins400', 'normal'); cover.setFontSize(8.8 * k); cover.setTextColor(...MUTE);
+    cover.text(String(line.c || ''), ML + 150, base);
+    cover.text(srcs[i].code, ML + 300, base);
+    cover.setFillColor(...BLUE); cover.roundedRect(MR - 16 - pillW, top + (bgH - pillH) / 2, pillW, pillH, pillH / 2, pillH / 2, 'F');
+    cover.setFont('Poppins700', 'normal'); cover.setFontSize(8 * k); cover.setTextColor(255, 255, 255);
+    cover.text('Sayfa ' + starts[i], MR - 16 - pillW / 2, top + bgH / 2 + 3 * Math.max(k, 0.7), { align: 'center' });
+  }
+  cover.setFillColor(...BLUE); cover.rect(ML, 800, CW, 1.5, 'F');
+  cover.setFont('Poppins700', 'normal'); cover.setFontSize(7.5); cover.setTextColor(...INK);
+  cover.text('Mikafon', ML, 816);
+  const wm = cover.getTextWidth('Mikafon ');
+  cover.setFont('Poppins400', 'normal'); cover.setTextColor(...MUTE);
+  cover.text('· Teknik Föy', ML + wm, 816);
+  cover.setFont('Poppins700', 'normal'); cover.setTextColor(...INK);
+  cover.text('mikafon.com.tr', MR, 816, { align: 'right' });
+  const out = await PDFDocument.create();
+  const coverDoc = await PDFDocument.load(cover.output('arraybuffer'), { updateMetadata: false });
+  (await out.copyPages(coverDoc, coverDoc.getPageIndices())).forEach(p => out.addPage(p));
+  for (const s of srcs) (await out.copyPages(s.doc, s.doc.getPageIndices())).forEach(p => out.addPage(p));
+  const ctx = out.context;
+  const cPage = out.getPage(0);
+  srcs.forEach((s, i) => {
+    const top = foyRowTop(i, rowH);
+    const target = out.getPage(starts[i] - 1);
+    const dest = ctx.obj([target.ref, PDFName.of('XYZ'), PDFNull, PDFNull, PDFNull]);
+    const annot = ctx.obj({ Type: PDFName.of('Annot'), Subtype: PDFName.of('Link'), Rect: [ML, PH - (top + rowH), MR, PH - top], Border: [0, 0, 0], Dest: dest });
+    cPage.node.addAnnot(ctx.register(annot));
+  });
+  return new Blob([await out.save()], { type: 'application/pdf' });
+}
 async function mergePdfs(list) {
   if (!window.PDFLib || !window.PDFLib.PDFDocument) return null;
   const { PDFDocument } = window.PDFLib;
@@ -1445,7 +1517,8 @@ $('shareBtn').addEventListener('click', async () => {
     const include = $('foyInclude').checked;
     const foys = include ? await datasheetFiles(state.lines.map(l => l.s)) : [];
     let foyPdf = null;
-    if (foys.length) { try { foyPdf = await mergePdfs(foys.map(f => f.file)); } catch (me) { foyPdf = null; } }
+    const lineMap = {}; state.lines.forEach(l => { lineMap[l.s] = l; });
+    if (foys.length) { try { foyPdf = await buildFoyBundle(foys, lineMap, qno); } catch (me) { foyPdf = null; } }
     const foyFile = foyPdf ? new File([foyPdf], 'Mikafon-Foyler-' + (qno || 'teklif').replace(/[^\p{L}\p{N}_-]+/gu, '_') + '.pdf', { type: 'application/pdf' }) : null;
     const files = foyFile ? [file, foyFile] : [file, ...foys.map(f => f.file)];
     const wanted = include ? state.lines.filter(l => DS_CODES.has(l.s)).length : 0;
