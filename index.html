@@ -416,7 +416,8 @@ body.rowdrag,body.rowdrag *{-webkit-user-select:none!important;user-select:none!
       <div id="empty"></div>
       <div class="totals" id="totals"></div>
       <div class="noprint" id="fxnote" style="margin-top:10px;border:1.5px solid #b42318;background:#fdf3f2;border-radius:10px;padding:10px 12px;color:#7a1a12;font-size:13px;line-height:1.6" hidden></div>
-      <div class="toolbar actbar noprint" style="margin-top:12px">
+      <label class="noprint" style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:12px 14px;border:1.5px solid #1d5fae;border-radius:12px;background:#eef4fc;font-size:14px;font-weight:600;color:var(--navy);cursor:pointer;box-shadow:0 2px 8px rgba(29,95,174,.12)"><input type="checkbox" id="foyInclude" checked style="width:20px;height:20px;margin:0;accent-color:#1d5fae;flex-shrink:0"> <span>Ürün föylerini de ekle<span style="display:block;font-weight:400;font-size:12px;color:#5b6b7f;margin-top:2px">Teklifle birlikte ayrı PDF olarak gider</span></span></label>
+      <div class="toolbar actbar noprint" style="margin-top:8px">
         <button class="btn" id="jpeg">PDF kaydet</button>
         <button class="btn" id="shareBtn">Müşteriye gönder</button>
         <button class="btn ghost" id="save">Teklifi kaydet</button>
@@ -1441,12 +1442,13 @@ $('shareBtn').addEventListener('click', async () => {
     const qno = ($('qno').value || '').trim();
     const fname = 'Mikafon-Teklif-' + (qno || 'teklif').replace(/[^\p{L}\p{N}_-]+/gu, '_') + '.pdf';
     const file = new File([blob], fname, { type: 'application/pdf' });
-    const foys = await datasheetFiles(state.lines.map(l => l.s));
+    const include = $('foyInclude').checked;
+    const foys = include ? await datasheetFiles(state.lines.map(l => l.s)) : [];
     let foyPdf = null;
     if (foys.length) { try { foyPdf = await mergePdfs(foys.map(f => f.file)); } catch (me) { foyPdf = null; } }
     const foyFile = foyPdf ? new File([foyPdf], 'Mikafon-Foyler-' + (qno || 'teklif').replace(/[^\p{L}\p{N}_-]+/gu, '_') + '.pdf', { type: 'application/pdf' }) : null;
     const files = foyFile ? [file, foyFile] : [file, ...foys.map(f => f.file)];
-    const wanted = state.lines.filter(l => DS_CODES.has(l.s)).length;
+    const wanted = include ? state.lines.filter(l => DS_CODES.has(l.s)).length : 0;
     $('shareInfo').textContent = foyFile ? foys.length + ' ürün föyü tek PDF olarak, sıralı ve teklifle ayrı eklendi' : (foys.length ? foys.length + ' ürün föyü eklendi' : (wanted ? 'Ürün föyleri yüklenemedi; yalnızca teklif paylaşılır' : ''));
     const who = ($('contact').value || $('cust').value || '').trim() || 'yetkili';
     const seller = ($('seller').value || '').trim();
